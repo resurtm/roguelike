@@ -3,7 +3,6 @@ use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use sdl2::render::TextureCreator;
 use std::thread::sleep;
 use std::time::Duration;
 
