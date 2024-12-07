@@ -10,15 +10,18 @@ use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
+use sdl2::render::Texture;
+use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
+use tiled::Loader;
 
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
     let window = video_subsystem
-        .window("rogue like", 1024, 768)
+        .window("roguelike", 1024, 768)
         .position_centered()
         .build()
         .unwrap();
@@ -29,6 +32,50 @@ pub fn main() {
     let texture = texture_creator
         .load_texture("./assets/red-tile.png")
         .unwrap();
+
+    let mut loader = Loader::new();
+    let map = loader.load_tmx_map("./assets/orc/tiled/Orc3.tmx").unwrap();
+
+    let mut tex_cache: HashMap<String, Texture> = HashMap::new();
+    for tileset in map.tilesets().iter() {
+        if let Some(image) = &tileset.image {
+            let img = texture_creator.load_texture(&image.source);
+            tex_cache.insert(image.source.to_str().unwrap().to_string(), img.unwrap());
+        }
+    }
+
+    let layer = map.get_layer(0).unwrap();
+    println!("Layer: {:?}", layer);
+    match layer.layer_type() {
+        tiled::LayerType::Tiles(layer) => match layer {
+            tiled::TileLayer::Finite(data) => {
+                println!("{}x{}", data.width(), data.height());
+
+                println!("{:?}", data.get_tile_data(1, 0).unwrap());
+                println!("{:?}", data.get_tile(1, 0).unwrap().id());
+                println!(
+                    "{:?}",
+                    data.get_tile(1, 0).unwrap().get_tile().unwrap().animation
+                );
+
+                println!("{:?}", data.get_tile_data(1, 1).unwrap());
+                println!("{:?}", data.get_tile(1, 1).unwrap().id());
+                println!(
+                    "{:?}",
+                    data.get_tile(1, 1).unwrap().get_tile().unwrap().animation
+                );
+
+                println!("{:?}", data.get_tile_data(1, 2).unwrap());
+                println!("{:?}", data.get_tile(1, 2).unwrap().id());
+                println!(
+                    "{:?}",
+                    data.get_tile(1, 2).unwrap().get_tile().unwrap().animation
+                );
+            }
+            _ => {}
+        },
+        _ => {}
+    }
 
     let mut player = Player::new();
     let mut input = Input::new();
@@ -68,13 +115,28 @@ pub fn main() {
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
 
-        let rect = Rect::new(
-            (player.position.0 - player.size) as i32,
-            (player.position.1 - player.size) as i32,
-            (player.size * 2.0) as u32,
-            (player.size * 2.0) as u32,
-        );
-        canvas.copy(&texture, None, rect).unwrap();
+        canvas
+            .copy(
+                &texture,
+                None,
+                Rect::new(
+                    (player.position.0 - player.size) as i32,
+                    (player.position.1 - player.size) as i32,
+                    (player.size * 2.0) as u32,
+                    (player.size * 2.0) as u32,
+                ),
+            )
+            .unwrap();
+
+        canvas
+            .copy(
+                &tex_cache
+                    .get("./assets/orc/tiled/orc3_idle_full.png")
+                    .unwrap(),
+                Rect::new(0, 0, 64, 64),
+                Rect::new(400, 400, 128, 128),
+            )
+            .unwrap();
 
         // present and sleep
         canvas.present();
