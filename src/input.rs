@@ -6,6 +6,7 @@ pub struct Input {
     pub key_down: bool,
     pub key_left: bool,
     pub key_right: bool,
+    pub key_space: bool,
 }
 
 impl Input {
@@ -15,6 +16,7 @@ impl Input {
             key_down: false,
             key_left: false,
             key_right: false,
+            key_space: false,
         }
     }
 
@@ -27,6 +29,7 @@ impl Input {
                 Keycode::DOWN => self.key_down = true,
                 Keycode::LEFT => self.key_left = true,
                 Keycode::RIGHT => self.key_right = true,
+                Keycode::SPACE => self.key_space = true,
                 _ => {}
             },
             Event::KeyUp {
@@ -36,6 +39,7 @@ impl Input {
                 Keycode::DOWN => self.key_down = false,
                 Keycode::LEFT => self.key_left = false,
                 Keycode::RIGHT => self.key_right = false,
+                Keycode::SPACE => self.key_space = false,
                 _ => {}
             },
             _ => {}

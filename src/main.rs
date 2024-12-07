@@ -107,6 +107,7 @@ pub fn main() {
         player_sprite.advance();
         player_sprite.position = player.position;
         player_sprite.walk = player.is_walk();
+        player_sprite.attack = input.key_space;
         player_sprite.direction = player.get_effective_direction();
 
         // render

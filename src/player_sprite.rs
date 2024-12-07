@@ -10,11 +10,14 @@ use crate::direction::Direction;
 pub struct PlayerSprite<'a> {
     pub position: (f64, f64),
     pub walk: bool,
+    pub attack: bool,
     pub direction: Direction,
     frame: f64,
 
     idle_texture: Texture<'a>,
     walk_texture: Texture<'a>,
+    walk_attack_texture: Texture<'a>,
+    attack_texture: Texture<'a>,
 }
 
 impl PlayerSprite<'_> {
@@ -22,6 +25,7 @@ impl PlayerSprite<'_> {
         PlayerSprite {
             position: (0.0, 0.0),
             walk: false,
+            attack: false,
             direction: Direction::Down,
             frame: 0.0,
 
@@ -31,14 +35,28 @@ impl PlayerSprite<'_> {
             walk_texture: texture_creator
                 .load_texture("./assets/orc/png/Orc3/orc3_walk/orc3_walk_full.png")
                 .unwrap(),
+            walk_attack_texture: texture_creator
+                .load_texture("./assets/orc/png/Orc3/orc3_run_attack/orc3_run_attack_full.png")
+                .unwrap(),
+            attack_texture: texture_creator
+                .load_texture("./assets/orc/png/Orc3/orc3_attack/orc3_attack_full.png")
+                .unwrap(),
         }
     }
 
     fn pick_texture(&self) -> &Texture {
         if self.walk {
-            return &self.walk_texture;
+            return if self.attack {
+                &self.walk_attack_texture
+            } else {
+                &self.walk_texture
+            };
         }
-        &self.idle_texture
+        if self.attack {
+            &self.attack_texture
+        } else {
+            &self.idle_texture
+        }
     }
 
     fn pick_texture_row(&self) -> i32 {
@@ -61,7 +79,7 @@ impl PlayerSprite<'_> {
     }
 
     pub fn advance(&mut self) {
-        self.frame += 0.05;
+        self.frame += 0.15;
         if self.frame >= 4.0 {
             self.frame = 0.0;
         }
