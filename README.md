@@ -1,5 +1,7 @@
 # `roguelike`
 
+Tiny hobby / free-time roguelike game pet-project. 🔮🧝🏻🪄
+
 ## Ubuntu Dependencies
 
 ```
