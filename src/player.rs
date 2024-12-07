@@ -17,8 +17,8 @@ impl Player {
             size: 25.0,
 
             speed: (0.0, 0.0),
-            speed_delta: 0.15,
-            speed_max: 2.5,
+            speed_delta: 0.35,
+            speed_max: 3.5,
             speed_slowdown: 0.92,
         }
     }

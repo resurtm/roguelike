@@ -1,61 +1,57 @@
 use sdl2::{
     image::LoadTexture,
     rect::Rect,
-    render::{Canvas, Texture, TextureCreator},
-    video::{Window, WindowContext},
+    render::{Canvas, Texture},
+    video::Window,
 };
 
-use crate::direction::Direction;
+use crate::{direct_media::DirectMedia, direction::Direction};
 
-pub struct PlayerSprite<'a> {
+pub struct PlayerSprite {
     pub position: (f64, f64),
+    pub direction: Direction,
+
     pub walk: bool,
     pub attack: bool,
-    pub direction: Direction,
-    frame: f64,
 
-    idle_texture: Texture<'a>,
-    walk_texture: Texture<'a>,
-    walk_attack_texture: Texture<'a>,
-    attack_texture: Texture<'a>,
+    animation_frame: f64,
+    idle_texture: Texture,
+    walk_texture: Texture,
+    walk_attack_texture: Texture,
+    attack_texture: Texture,
 }
 
-impl PlayerSprite<'_> {
-    pub fn new(texture_creator: &TextureCreator<WindowContext>) -> PlayerSprite {
+impl PlayerSprite {
+    pub fn new(direct_media: &mut DirectMedia) -> PlayerSprite {
+        let idle_texture = direct_media
+            .texture_creator
+            .load_texture("./assets/orc/png/Orc3/orc3_idle/orc3_idle_full.png")
+            .unwrap();
+        let walk_texture = direct_media
+            .texture_creator
+            .load_texture("./assets/orc/png/Orc3/orc3_walk/orc3_walk_full.png")
+            .unwrap();
+        let walk_attack_texture = direct_media
+            .texture_creator
+            .load_texture("./assets/orc/png/Orc3/orc3_walk_attack/orc3_walk_attack_full.png")
+            .unwrap();
+        let attack_texture = direct_media
+            .texture_creator
+            .load_texture("./assets/orc/png/Orc3/orc3_attack/orc3_attack_full.png")
+            .unwrap();
+
         PlayerSprite {
             position: (0.0, 0.0),
+            direction: Direction::Down,
+
             walk: false,
             attack: false,
-            direction: Direction::Down,
-            frame: 0.0,
 
-            idle_texture: texture_creator
-                .load_texture("./assets/orc/png/Orc3/orc3_idle/orc3_idle_full.png")
-                .unwrap(),
-            walk_texture: texture_creator
-                .load_texture("./assets/orc/png/Orc3/orc3_walk/orc3_walk_full.png")
-                .unwrap(),
-            walk_attack_texture: texture_creator
-                .load_texture("./assets/orc/png/Orc3/orc3_run_attack/orc3_run_attack_full.png")
-                .unwrap(),
-            attack_texture: texture_creator
-                .load_texture("./assets/orc/png/Orc3/orc3_attack/orc3_attack_full.png")
-                .unwrap(),
-        }
-    }
-
-    fn pick_texture(&self) -> &Texture {
-        if self.walk {
-            return if self.attack {
-                &self.walk_attack_texture
-            } else {
-                &self.walk_texture
-            };
-        }
-        if self.attack {
-            &self.attack_texture
-        } else {
-            &self.idle_texture
+            animation_frame: 0.0,
+            idle_texture,
+            walk_texture,
+            walk_attack_texture,
+            attack_texture,
         }
     }
 
@@ -69,19 +65,37 @@ impl PlayerSprite<'_> {
     }
 
     pub fn render(&self, canvas: &mut Canvas<Window>) {
+        let texture = if self.walk {
+            if self.attack {
+                &self.walk_attack_texture
+            } else {
+                &self.walk_texture
+            }
+        } else {
+            if self.attack {
+                &self.attack_texture
+            } else {
+                &self.idle_texture
+            }
+        };
         canvas
             .copy(
-                self.pick_texture(),
-                Rect::new(64 * (self.frame as i32), self.pick_texture_row(), 64, 64),
+                texture,
+                Rect::new(
+                    64 * (self.animation_frame as i32),
+                    self.pick_texture_row(),
+                    64,
+                    64,
+                ),
                 Rect::new(self.position.0 as i32, self.position.1 as i32, 256, 256),
             )
             .unwrap();
     }
 
     pub fn advance(&mut self) {
-        self.frame += 0.15;
-        if self.frame >= 4.0 {
-            self.frame = 0.0;
+        self.animation_frame += 0.15;
+        if self.animation_frame >= 4.0 {
+            self.animation_frame = 0.0;
         }
     }
 }
