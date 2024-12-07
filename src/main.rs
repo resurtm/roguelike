@@ -1,19 +1,13 @@
 mod direction;
 mod input;
 mod player;
+mod player_sprite;
 
-use direction::Direction;
-use input::Input;
-use player::Player;
-use sdl2::event::Event;
-use sdl2::image::LoadTexture;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::render::Texture;
-use std::collections::HashMap;
-use std::thread::sleep;
-use std::time::Duration;
+use crate::{direction::Direction, input::Input, player::Player, player_sprite::PlayerSprite};
+use sdl2::{
+    event::Event, image::LoadTexture, keyboard::Keycode, pixels::Color, render::Texture,
+};
+use std::{collections::HashMap, thread::sleep, time::Duration};
 use tiled::Loader;
 
 pub fn main() {
@@ -78,6 +72,7 @@ pub fn main() {
     }
 
     let mut player = Player::new();
+    let mut player_sprite = PlayerSprite::new(&texture_creator);
     let mut input = Input::new();
 
     'running: loop {
@@ -109,34 +104,39 @@ pub fn main() {
         if input.key_right {
             player.thrust(Direction::Right);
         }
+
         player.advance();
+        player_sprite.advance();
+        player_sprite.position = player.position;
 
         // render
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
 
-        canvas
-            .copy(
-                &texture,
-                None,
-                Rect::new(
-                    (player.position.0 - player.size) as i32,
-                    (player.position.1 - player.size) as i32,
-                    (player.size * 2.0) as u32,
-                    (player.size * 2.0) as u32,
-                ),
-            )
-            .unwrap();
+        // canvas
+        //     .copy(
+        //         &texture,
+        //         None,
+        //         Rect::new(
+        //             (player.position.0 - player.size) as i32,
+        //             (player.position.1 - player.size) as i32,
+        //             (player.size * 2.0) as u32,
+        //             (player.size * 2.0) as u32,
+        //         ),
+        //     )
+        //     .unwrap();
 
-        canvas
-            .copy(
-                &tex_cache
-                    .get("./assets/orc/tiled/orc3_idle_full.png")
-                    .unwrap(),
-                Rect::new(0, 0, 64, 64),
-                Rect::new(400, 400, 128, 128),
-            )
-            .unwrap();
+        // canvas
+        //     .copy(
+        //         &tex_cache
+        //             .get("./assets/orc/tiled/orc3_idle_full.png")
+        //             .unwrap(),
+        //         Rect::new(0, 0, 64, 64),
+        //         Rect::new(400, 400, 128, 128),
+        //     )
+        //     .unwrap();
+
+        player_sprite.render(&mut canvas);
 
         // present and sleep
         canvas.present();
