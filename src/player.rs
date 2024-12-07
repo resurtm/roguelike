@@ -59,4 +59,32 @@ impl Player {
             self.speed.1 = -self.speed_max;
         }
     }
+
+    pub fn is_walk(&self) -> bool {
+        return self.speed.0.abs() > 0.05 || self.speed.1.abs() > 0.05;
+    }
+
+    pub fn get_effective_direction(&self) -> Direction {
+        if self.speed.0 < 0.0 {
+            if self.speed.0.abs() > self.speed.1.abs() {
+                return Direction::Left;
+            }
+            return if self.speed.1 < 0.0 {
+                Direction::Up
+            } else {
+                Direction::Down
+            };
+        }
+        if self.speed.0 > 0.0 {
+            if self.speed.0.abs() > self.speed.1.abs() {
+                return Direction::Right;
+            }
+            return if self.speed.1 < 0.0 {
+                Direction::Up
+            } else {
+                Direction::Down
+            };
+        }
+        Direction::Down
+    }
 }

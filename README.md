@@ -3,7 +3,7 @@
 ## Ubuntu Dependencies
 
 ```
-sudo apt-get install libsdl2-dev libsdl2-image-dev
+sudo apt install libsdl2-dev libsdl2-image-dev
 ```
 
 ## Assets
@@ -11,3 +11,7 @@ sudo apt-get install libsdl2-dev libsdl2-image-dev
 ### `./assets/orc`
 
 Source: [click here](https://craftpix.net/freebies/free-top-down-orc-game-character-pixel-art/).
+
+## License (except assets)
+
+[MIT](./README.md)

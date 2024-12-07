@@ -4,9 +4,7 @@ mod player;
 mod player_sprite;
 
 use crate::{direction::Direction, input::Input, player::Player, player_sprite::PlayerSprite};
-use sdl2::{
-    event::Event, image::LoadTexture, keyboard::Keycode, pixels::Color, render::Texture,
-};
+use sdl2::{event::Event, image::LoadTexture, keyboard::Keycode, pixels::Color, render::Texture};
 use std::{collections::HashMap, thread::sleep, time::Duration};
 use tiled::Loader;
 
@@ -108,6 +106,8 @@ pub fn main() {
         player.advance();
         player_sprite.advance();
         player_sprite.position = player.position;
+        player_sprite.walk = player.is_walk();
+        player_sprite.direction = player.get_effective_direction();
 
         // render
         canvas.set_draw_color(Color::RGB(0, 0, 0));
