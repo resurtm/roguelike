@@ -29,9 +29,9 @@ impl Player {
             position: (250.0, 350.0),
 
             speed: (0.0, 0.0),
-            speed_delta: 0.1,
-            speed_max: 3.5,
-            speed_slowdown: 0.95,
+            speed_delta: 0.15,
+            speed_max: 2.5,
+            speed_slowdown: 0.92,
 
             size: 25.0,
         }
@@ -75,6 +75,48 @@ impl Player {
     }
 }
 
+struct Input {
+    key_up: bool,
+    key_down: bool,
+    key_left: bool,
+    key_right: bool,
+}
+
+impl Input {
+    fn new() -> Input {
+        Input {
+            key_up: false,
+            key_down: false,
+            key_left: false,
+            key_right: false,
+        }
+    }
+
+    fn handle_key_event(&mut self, event: &Event) {
+        match event {
+            Event::KeyDown {
+                keycode: Some(k), ..
+            } => match *k {
+                Keycode::UP => self.key_up = true,
+                Keycode::DOWN => self.key_down = true,
+                Keycode::LEFT => self.key_left = true,
+                Keycode::RIGHT => self.key_right = true,
+                _ => {}
+            },
+            Event::KeyUp {
+                keycode: Some(k), ..
+            } => match *k {
+                Keycode::UP => self.key_up = false,
+                Keycode::DOWN => self.key_down = false,
+                Keycode::LEFT => self.key_left = false,
+                Keycode::RIGHT => self.key_right = false,
+                _ => {}
+            },
+            _ => {}
+        }
+    }
+}
+
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -88,38 +130,37 @@ pub fn main() {
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     let mut player = Player::new();
+    let mut input = Input::new();
 
     'running: loop {
         // events and input
         for event in event_pump.poll_iter() {
-            println!("{:?}", event);
             match event {
                 Event::Quit { .. }
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
-                Event::KeyDown {
-                    keycode: Some(Keycode::UP),
-                    ..
-                } => player.thrust(Direction::Up),
-                Event::KeyDown {
-                    keycode: Some(Keycode::DOWN),
-                    ..
-                } => player.thrust(Direction::Down),
-                Event::KeyDown {
-                    keycode: Some(Keycode::LEFT),
-                    ..
-                } => player.thrust(Direction::Left),
-                Event::KeyDown {
-                    keycode: Some(Keycode::RIGHT),
-                    ..
-                } => player.thrust(Direction::Right),
+                Event::KeyDown { .. } | Event::KeyUp { .. } => {
+                    input.handle_key_event(&event);
+                }
                 _ => {}
             }
         }
 
         // calculate
+        if input.key_up {
+            player.thrust(Direction::Up);
+        }
+        if input.key_down {
+            player.thrust(Direction::Down);
+        }
+        if input.key_left {
+            player.thrust(Direction::Left);
+        }
+        if input.key_right {
+            player.thrust(Direction::Right);
+        }
         player.advance();
 
         // render
