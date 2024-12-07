@@ -1,3 +1,10 @@
+mod direction;
+mod input;
+mod player;
+
+use direction::Direction;
+use input::Input;
+use player::Player;
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
@@ -5,118 +12,6 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use std::thread::sleep;
 use std::time::Duration;
-
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-struct Player {
-    position: (f64, f64),
-
-    speed: (f64, f64),
-    speed_delta: f64,
-    speed_max: f64,
-    speed_slowdown: f64,
-
-    size: f64,
-}
-
-impl Player {
-    fn new() -> Player {
-        Player {
-            position: (250.0, 350.0),
-
-            speed: (0.0, 0.0),
-            speed_delta: 0.15,
-            speed_max: 2.5,
-            speed_slowdown: 0.92,
-
-            size: 25.0,
-        }
-    }
-
-    fn thrust(&mut self, direction: Direction) {
-        match direction {
-            Direction::Up => self.speed.1 -= self.speed_delta,
-            Direction::Down => self.speed.1 += self.speed_delta,
-            Direction::Left => self.speed.0 -= self.speed_delta,
-            Direction::Right => self.speed.0 += self.speed_delta,
-        }
-        self.cap_max();
-    }
-
-    fn advance(&mut self) {
-        self.position = (
-            self.position.0 + self.speed.0,
-            self.position.1 + self.speed.1,
-        );
-        self.speed = (
-            self.speed.0 * self.speed_slowdown,
-            self.speed.1 * self.speed_slowdown,
-        );
-        self.cap_max();
-    }
-
-    fn cap_max(&mut self) {
-        if self.speed.0 > self.speed_max {
-            self.speed.0 = self.speed_max;
-        }
-        if self.speed.0 < -self.speed_max {
-            self.speed.0 = -self.speed_max;
-        }
-        if self.speed.1 > self.speed_max {
-            self.speed.1 = self.speed_max;
-        }
-        if self.speed.1 < -self.speed_max {
-            self.speed.1 = -self.speed_max;
-        }
-    }
-}
-
-struct Input {
-    key_up: bool,
-    key_down: bool,
-    key_left: bool,
-    key_right: bool,
-}
-
-impl Input {
-    fn new() -> Input {
-        Input {
-            key_up: false,
-            key_down: false,
-            key_left: false,
-            key_right: false,
-        }
-    }
-
-    fn handle_key_event(&mut self, event: &Event) {
-        match event {
-            Event::KeyDown {
-                keycode: Some(k), ..
-            } => match *k {
-                Keycode::UP => self.key_up = true,
-                Keycode::DOWN => self.key_down = true,
-                Keycode::LEFT => self.key_left = true,
-                Keycode::RIGHT => self.key_right = true,
-                _ => {}
-            },
-            Event::KeyUp {
-                keycode: Some(k), ..
-            } => match *k {
-                Keycode::UP => self.key_up = false,
-                Keycode::DOWN => self.key_down = false,
-                Keycode::LEFT => self.key_left = false,
-                Keycode::RIGHT => self.key_right = false,
-                _ => {}
-            },
-            _ => {}
-        }
-    }
-}
 
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
