@@ -1,7 +1,9 @@
 use sdl2::event::Event;
+use sdl2::image::LoadTexture;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
+use sdl2::render::TextureCreator;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -129,6 +131,11 @@ pub fn main() {
     let mut canvas = window.into_canvas().build().unwrap();
     let mut event_pump = sdl_context.event_pump().unwrap();
 
+    let texture_creator = canvas.texture_creator();
+    let texture = texture_creator
+        .load_texture("./assets/red-tile.png")
+        .unwrap();
+
     let mut player = Player::new();
     let mut input = Input::new();
 
@@ -167,15 +174,13 @@ pub fn main() {
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
 
-        canvas.set_draw_color(Color::RGB(255, 0, 0));
-        canvas
-            .draw_rect(Rect::new(
-                (player.position.0 - player.size) as i32,
-                (player.position.1 - player.size) as i32,
-                (player.size * 2.0) as u32,
-                (player.size * 2.0) as u32,
-            ))
-            .unwrap();
+        let rect = Rect::new(
+            (player.position.0 - player.size) as i32,
+            (player.position.1 - player.size) as i32,
+            (player.size * 2.0) as u32,
+            (player.size * 2.0) as u32,
+        );
+        canvas.copy(&texture, None, rect).unwrap();
 
         // present and sleep
         canvas.present();

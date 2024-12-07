@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sdl2 = "0.37.0"
+sdl2 = { version = "0.37.0", default-features = false, features = ["image"] }
