@@ -5,7 +5,7 @@ use sdl2::{
     video::Window,
 };
 
-use crate::{direct_media::DirectMedia, direction::Direction};
+use crate::{direct_media::DirectMedia, types::Direction};
 
 pub struct PlayerSprite {
     pub position: (f64, f64),

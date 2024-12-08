@@ -1,11 +1,12 @@
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
+use sdl2::{event::Event, keyboard::Keycode};
 
 pub struct Input {
     pub key_up: bool,
     pub key_down: bool,
+
     pub key_left: bool,
     pub key_right: bool,
+
     pub key_space: bool,
 }
 
@@ -14,8 +15,10 @@ impl Input {
         Input {
             key_up: false,
             key_down: false,
+
             key_left: false,
             key_right: false,
+
             key_space: false,
         }
     }

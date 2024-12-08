@@ -1,4 +1,4 @@
-use crate::direction::Direction;
+use crate::types::Direction;
 
 pub struct Player {
     pub position: (f64, f64),

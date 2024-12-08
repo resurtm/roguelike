@@ -1,5 +1,6 @@
-use crate::direct_media::DirectMedia;
-use crate::{direction::Direction, input::Input, player::Player, player_sprite::PlayerSprite};
+use crate::direct_media::{DirectMedia, DirectMediaError};
+use crate::{input::Input, player::Player, player_sprite::PlayerSprite, types::Direction};
+use thiserror::Error;
 
 pub struct MainLoop {
     input: Input,
@@ -10,25 +11,23 @@ pub struct MainLoop {
 }
 
 impl MainLoop {
-    pub fn new() -> MainLoop {
+    pub fn new() -> Result<MainLoop, MainLoopError> {
         let input = Input::new();
-        let mut direct_media = DirectMedia::new();
+        let mut direct_media = DirectMedia::new()?;
 
         let player = Player::new();
         let player_sprite = PlayerSprite::new(&mut direct_media);
 
-        MainLoop {
+        Ok(MainLoop {
             input,
             direct_media,
             player,
             player_sprite,
-        }
+        })
     }
 
     pub fn run(&mut self) {
-        while self.direct_media.is_main_loop_active {
-            self.direct_media.handle_events(&mut self.input);
-
+        while self.direct_media.handle_events(&mut self.input) {
             if self.input.key_up {
                 self.player.thrust(Direction::Up);
             }
@@ -55,4 +54,10 @@ impl MainLoop {
             self.direct_media.present_end();
         }
     }
+}
+
+#[derive(Error, Debug)]
+pub enum MainLoopError {
+    #[error("direct media error: {0}")]
+    DirectMedia(#[from] DirectMediaError),
 }
