@@ -1,101 +1,140 @@
 use sdl2::{
-    image::LoadTexture,
     rect::Rect,
-    render::{Canvas, Texture},
+    render::Canvas,
     video::Window,
 };
 
-use crate::{direct_media::DirectMedia, types::Direction};
+use crate::{
+    player::{Player, PlayerMovementState},
+    textures::{TextureID, Textures},
+    types::Direction,
+};
 
 pub struct PlayerSprite {
-    pub position: (f64, f64),
-    pub direction: Direction,
-
-    pub walk: bool,
-    pub attack: bool,
-
+    location: (f64, f64),
+    direction: Direction,
+    state: PlayerSpriteState,
     animation_frame: f64,
-    idle_texture: Texture,
-    walk_texture: Texture,
-    walk_attack_texture: Texture,
-    attack_texture: Texture,
 }
 
 impl PlayerSprite {
-    pub fn new(direct_media: &mut DirectMedia) -> PlayerSprite {
-        let idle_texture = direct_media
-            .texture_creator
-            .load_texture("./assets/orc/png/Orc3/orc3_idle/orc3_idle_full.png")
-            .unwrap();
-        let walk_texture = direct_media
-            .texture_creator
-            .load_texture("./assets/orc/png/Orc3/orc3_walk/orc3_walk_full.png")
-            .unwrap();
-        let walk_attack_texture = direct_media
-            .texture_creator
-            .load_texture("./assets/orc/png/Orc3/orc3_walk_attack/orc3_walk_attack_full.png")
-            .unwrap();
-        let attack_texture = direct_media
-            .texture_creator
-            .load_texture("./assets/orc/png/Orc3/orc3_attack/orc3_attack_full.png")
-            .unwrap();
-
+    pub fn new() -> PlayerSprite {
         PlayerSprite {
-            position: (0.0, 0.0),
+            location: (0.0, 0.0),
             direction: Direction::Down,
-
-            walk: false,
-            attack: false,
-
+            state: PlayerSpriteState::Idle,
             animation_frame: 0.0,
-            idle_texture,
-            walk_texture,
-            walk_attack_texture,
-            attack_texture,
         }
     }
 
-    fn pick_texture_row(&self) -> i32 {
-        64 * match self.direction {
+    pub fn render(&self, canvas: &mut Canvas<Window>, textures: &Textures) {
+        let texture = textures
+            .get(
+                &LOOKUP
+                    .iter()
+                    .find(|&x| x.0 == self.state)
+                    .expect("texture 1")
+                    .1,
+            )
+            .expect("texture 2");
+
+        let texture_row = match self.direction {
             Direction::Up => 1,
             Direction::Down => 0,
             Direction::Left => 2,
             Direction::Right => 3,
-        }
-    }
-
-    pub fn render(&self, canvas: &mut Canvas<Window>) {
-        let texture = if self.walk {
-            if self.attack {
-                &self.walk_attack_texture
-            } else {
-                &self.walk_texture
-            }
-        } else {
-            if self.attack {
-                &self.attack_texture
-            } else {
-                &self.idle_texture
-            }
         };
+
         canvas
             .copy(
                 texture,
-                Rect::new(
-                    64 * (self.animation_frame as i32),
-                    self.pick_texture_row(),
-                    64,
-                    64,
-                ),
-                Rect::new(self.position.0 as i32, self.position.1 as i32, 256, 256),
+                Rect::new(64 * (self.animation_frame as i32), 64 * texture_row, 64, 64),
+                Rect::new(self.location.0 as i32, self.location.1 as i32, 256, 256),
             )
             .unwrap();
     }
 
-    pub fn advance(&mut self) {
-        self.animation_frame += 0.15;
-        if self.animation_frame >= 4.0 {
+    pub fn advance(&mut self, player: &Player) {
+        self.state = match player.movement_state {
+            PlayerMovementState::Idle => {
+                if player.is_attack {
+                    PlayerSpriteState::IdleAttack
+                } else {
+                    PlayerSpriteState::Idle
+                }
+            }
+            PlayerMovementState::Walk => {
+                if player.is_attack {
+                    PlayerSpriteState::WalkAttack
+                } else {
+                    PlayerSpriteState::Walk
+                }
+            }
+            PlayerMovementState::Run => {
+                if player.is_attack {
+                    PlayerSpriteState::RunAttack
+                } else {
+                    PlayerSpriteState::Run
+                }
+            }
+        };
+
+        self.location = player.position;
+        self.direction = Self::find_direction(player);
+
+        self.animation_frame += ANIMATION_SPEED;
+        if self.animation_frame >= ANIMATION_FRAMES as f64 {
             self.animation_frame = 0.0;
         }
     }
+
+    fn find_direction(player: &Player) -> Direction {
+        if player.velocity.0 < 0.0 {
+            if player.velocity.0.abs() > player.velocity.1.abs() {
+                return Direction::Left;
+            }
+            return if player.velocity.1 < 0.0 {
+                return Direction::Up;
+            } else {
+                return Direction::Down;
+            };
+        }
+        if player.velocity.0 > 0.0 {
+            if player.velocity.0.abs() > player.velocity.1.abs() {
+                return Direction::Right;
+            }
+            return if player.velocity.1 < 0.0 {
+                return Direction::Up;
+            } else {
+                return Direction::Down;
+            };
+        }
+        Direction::Down
+    }
 }
+
+const ANIMATION_SPEED: f64 = 0.15;
+const ANIMATION_FRAMES: i32 = 4;
+
+#[derive(PartialEq)]
+enum PlayerSpriteState {
+    Idle,       // orc3_idle
+    IdleAttack, // orc3_attack
+    Walk,       // orc3_walk
+    WalkAttack, // orc3_walk_attack
+    Run,        // orc3_run
+    RunAttack,  // orc3_run_attack
+    Hurt,       // orc3_hurt
+    Death,      // orc3_death
+}
+
+const LOOKUP: [(PlayerSpriteState, TextureID); 8] = [
+    (PlayerSpriteState::Idle, TextureID::Orc3Idle),
+    (PlayerSpriteState::IdleAttack, TextureID::Orc3Attack),
+    (PlayerSpriteState::Walk, TextureID::Orc3Walk),
+    (PlayerSpriteState::WalkAttack, TextureID::Orc3WalkAttack),
+    (PlayerSpriteState::Run, TextureID::Orc3Run),
+    (PlayerSpriteState::RunAttack, TextureID::Orc3RunAttack),
+    (PlayerSpriteState::Hurt, TextureID::Orc3Hurt),
+    (PlayerSpriteState::Death, TextureID::Orc3Death),
+];
