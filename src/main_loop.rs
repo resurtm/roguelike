@@ -1,4 +1,5 @@
 use crate::direct_media::{DirectMedia, DirectMediaError};
+use crate::player_sprite::PlayerSpriteError;
 use crate::textures::{Textures, TexturesError};
 use crate::{input::Input, player::Player, player_sprite::PlayerSprite};
 use thiserror::Error;
@@ -31,16 +32,17 @@ impl MainLoop {
         })
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), MainLoopError> {
         while self.direct_media.handle_events(&mut self.input) {
             self.player.advance(&self.input);
             self.player_sprite.advance(&self.player);
 
             self.direct_media.present_start();
             self.player_sprite
-                .render(&mut self.direct_media.canvas, &self.textures);
+                .render(&mut self.direct_media.canvas, &self.textures)?;
             self.direct_media.present_end();
         }
+        Ok(())
     }
 }
 
@@ -51,4 +53,7 @@ pub enum MainLoopError {
 
     #[error("textures error: {0}")]
     Textures(#[from] TexturesError),
+
+    #[error("player sprite render error: {0}")]
+    PlayerSpriteRender(#[from] PlayerSpriteError),
 }

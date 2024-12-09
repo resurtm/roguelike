@@ -1,20 +1,16 @@
-use sdl2::{
-    rect::Rect,
-    render::Canvas,
-    video::Window,
-};
-
 use crate::{
-    player::{Player, PlayerMovementState},
+    player::Player,
     textures::{TextureID, Textures},
     types::Direction,
 };
+use sdl2::{rect::Rect, render::Canvas, video::Window};
+use thiserror::Error;
 
 pub struct PlayerSprite {
-    location: (f64, f64),
+    location: (f32, f32),
     direction: Direction,
     state: PlayerSpriteState,
-    animation_frame: f64,
+    animation_frame: f32,
 }
 
 impl PlayerSprite {
@@ -27,65 +23,67 @@ impl PlayerSprite {
         }
     }
 
-    pub fn render(&self, canvas: &mut Canvas<Window>, textures: &Textures) {
-        let texture = textures
-            .get(
-                &LOOKUP
-                    .iter()
-                    .find(|&x| x.0 == self.state)
-                    .expect("texture 1")
-                    .1,
-            )
-            .expect("texture 2");
+    pub fn render(
+        &self,
+        canvas: &mut Canvas<Window>,
+        textures: &Textures,
+    ) -> Result<(), PlayerSpriteError> {
+        let tex_id = &LOOKUP
+            .iter()
+            .find(|&x| x.0 == self.state)
+            .ok_or(PlayerSpriteError::TextureLookup())?
+            .1;
+        let tex = textures
+            .get(tex_id)
+            .ok_or(PlayerSpriteError::TextureGet())?;
 
-        let texture_row = match self.direction {
-            Direction::Up => 1,
-            Direction::Down => 0,
-            Direction::Left => 2,
-            Direction::Right => 3,
-        };
+        let src = Rect::new(
+            64 * (self.animation_frame as i32),
+            64 * self.find_texture_row() as i32,
+            64,
+            64,
+        );
+        let dst = Rect::new(self.location.0 as i32, self.location.1 as i32, 256, 256);
 
         canvas
-            .copy(
-                texture,
-                Rect::new(64 * (self.animation_frame as i32), 64 * texture_row, 64, 64),
-                Rect::new(self.location.0 as i32, self.location.1 as i32, 256, 256),
-            )
-            .unwrap();
+            .copy(tex, src, dst)
+            .map_err(|msg| PlayerSpriteError::CanvasCopy(msg))?;
+        Ok(())
     }
 
     pub fn advance(&mut self, player: &Player) {
-        self.state = match player.movement_state {
-            PlayerMovementState::Idle => {
-                if player.is_attack {
-                    PlayerSpriteState::IdleAttack
-                } else {
-                    PlayerSpriteState::Idle
-                }
-            }
-            PlayerMovementState::Walk => {
-                if player.is_attack {
-                    PlayerSpriteState::WalkAttack
-                } else {
-                    PlayerSpriteState::Walk
-                }
-            }
-            PlayerMovementState::Run => {
-                if player.is_attack {
-                    PlayerSpriteState::RunAttack
-                } else {
-                    PlayerSpriteState::Run
-                }
-            }
-        };
-
         self.location = player.position;
         self.direction = Self::find_direction(player);
+        self.state = Self::find_state(player);
 
         self.animation_frame += ANIMATION_SPEED;
-        if self.animation_frame >= ANIMATION_FRAMES as f64 {
+        if self.animation_frame >= ANIMATION_FRAMES as f32 {
             self.animation_frame = 0.0;
         }
+    }
+
+    fn find_state(player: &Player) -> PlayerSpriteState {
+        let speed = f32::sqrt(
+            player.velocity.0 * player.velocity.0 + player.velocity.1 * player.velocity.1,
+        );
+        if speed >= RUN_SPEED_THRESHOLD {
+            return if player.is_attack {
+                PlayerSpriteState::RunAttack
+            } else {
+                PlayerSpriteState::Run
+            };
+        } else if speed >= WALK_SPEED_THRESHOLD {
+            return if player.is_attack {
+                PlayerSpriteState::WalkAttack
+            } else {
+                PlayerSpriteState::Walk
+            };
+        }
+        return if player.is_attack {
+            PlayerSpriteState::IdleAttack
+        } else {
+            PlayerSpriteState::Idle
+        };
     }
 
     fn find_direction(player: &Player) -> Direction {
@@ -94,9 +92,9 @@ impl PlayerSprite {
                 return Direction::Left;
             }
             return if player.velocity.1 < 0.0 {
-                return Direction::Up;
+                Direction::Up
             } else {
-                return Direction::Down;
+                Direction::Down
             };
         }
         if player.velocity.0 > 0.0 {
@@ -104,17 +102,29 @@ impl PlayerSprite {
                 return Direction::Right;
             }
             return if player.velocity.1 < 0.0 {
-                return Direction::Up;
+                Direction::Up
             } else {
-                return Direction::Down;
+                Direction::Down
             };
         }
         Direction::Down
     }
+
+    fn find_texture_row(&self) -> u8 {
+        match self.direction {
+            Direction::Up => 1,
+            Direction::Down => 0,
+            Direction::Left => 2,
+            Direction::Right => 3,
+        }
+    }
 }
 
-const ANIMATION_SPEED: f64 = 0.15;
-const ANIMATION_FRAMES: i32 = 4;
+const WALK_SPEED_THRESHOLD: f32 = 0.5;
+const RUN_SPEED_THRESHOLD: f32 = 2.5;
+
+const ANIMATION_SPEED: f32 = 0.15;
+const ANIMATION_FRAMES: u8 = 4;
 
 #[derive(PartialEq)]
 enum PlayerSpriteState {
@@ -138,3 +148,15 @@ const LOOKUP: [(PlayerSpriteState, TextureID); 8] = [
     (PlayerSpriteState::Hurt, TextureID::Orc3Hurt),
     (PlayerSpriteState::Death, TextureID::Orc3Death),
 ];
+
+#[derive(Error, Debug)]
+pub enum PlayerSpriteError {
+    #[error("texture lookup error")]
+    TextureLookup(),
+
+    #[error("texture get error")]
+    TextureGet(),
+
+    #[error("canvas copy error: {0}")]
+    CanvasCopy(String),
+}

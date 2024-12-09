@@ -1,14 +1,13 @@
 use crate::input::Input;
 
 pub struct Player {
-    pub position: (f64, f64),
+    pub position: (f32, f32),
 
-    pub velocity: (f64, f64),
-    velocity_delta: f64,
-    velocity_max: f64,
-    velocity_slowdown: f64,
+    pub velocity: (f32, f32),
+    velocity_delta: f32,
+    velocity_max: f32,
+    velocity_slowdown: f32,
 
-    pub movement_state: PlayerMovementState,
     pub is_attack: bool,
 }
 
@@ -19,10 +18,9 @@ impl Player {
 
             velocity: (0.0, 0.0),
             velocity_delta: 0.35,
-            velocity_max: 3.5,
+            velocity_max: 6.5,
             velocity_slowdown: 0.92,
 
-            movement_state: PlayerMovementState::Idle,
             is_attack: false,
         }
     }
@@ -71,14 +69,4 @@ impl Player {
             self.velocity.1 = -self.velocity_max;
         }
     }
-
-    pub fn is_walk(&self) -> bool {
-        return self.velocity.0.abs() > 0.05 || self.velocity.1.abs() > 0.05;
-    }
-}
-
-pub enum PlayerMovementState {
-    Idle,
-    Walk,
-    Run,
 }
