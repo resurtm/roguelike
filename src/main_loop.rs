@@ -1,4 +1,5 @@
 use crate::direct_media::{DirectMedia, DirectMediaError};
+use crate::level::Level;
 use crate::player_sprite::PlayerSpriteError;
 use crate::textures::{Textures, TexturesError};
 use crate::{input::Input, player::Player, player_sprite::PlayerSprite};
@@ -11,6 +12,7 @@ pub struct MainLoop {
 
     player: Player,
     player_sprite: PlayerSprite,
+    level: Level,
 }
 
 impl MainLoop {
@@ -21,6 +23,9 @@ impl MainLoop {
 
         let player = Player::new();
         let player_sprite = PlayerSprite::new();
+        let level = Level::new();
+
+        println!("{:?}", level.cells);
 
         Ok(MainLoop {
             direct_media,
@@ -29,6 +34,7 @@ impl MainLoop {
 
             player,
             player_sprite,
+            level,
         })
     }
 
