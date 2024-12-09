@@ -1,9 +1,10 @@
 use crate::input::Input;
+use cgmath::{Point2, Vector2};
 
 pub struct Player {
-    pub position: (f32, f32),
+    pub position: Point2<f32>,
 
-    pub velocity: (f32, f32),
+    pub velocity: Vector2<f32>,
     velocity_delta: f32,
     velocity_max: f32,
     velocity_slowdown: f32,
@@ -14,9 +15,9 @@ pub struct Player {
 impl Player {
     pub fn new() -> Player {
         Player {
-            position: (250.0, 350.0),
+            position: Point2::new(250.0, 250.0),
 
-            velocity: (0.0, 0.0),
+            velocity: Vector2::new(0.0, 0.0),
             velocity_delta: 0.35,
             velocity_max: 6.5,
             velocity_slowdown: 0.92,
@@ -28,45 +29,34 @@ impl Player {
     pub fn advance(&mut self, input: &Input) {
         // thrust
         if input.key_up {
-            self.velocity.1 -= self.velocity_delta
+            self.velocity.y -= self.velocity_delta
         }
         if input.key_down {
-            self.velocity.1 += self.velocity_delta
+            self.velocity.y += self.velocity_delta
         }
         if input.key_left {
-            self.velocity.0 -= self.velocity_delta
+            self.velocity.x -= self.velocity_delta
         }
         if input.key_right {
-            self.velocity.0 += self.velocity_delta
+            self.velocity.x += self.velocity_delta
         }
 
-        // attack
         self.is_attack = input.key_space;
-
-        // update position
-        self.position = (
-            self.position.0 + self.velocity.0,
-            self.position.1 + self.velocity.1,
-        );
-
-        // update velocity
-        self.velocity = (
-            self.velocity.0 * self.velocity_slowdown,
-            self.velocity.1 * self.velocity_slowdown,
-        );
+        self.position += self.velocity;
+        self.velocity *= self.velocity_slowdown;
 
         // limit max capacity
-        if self.velocity.0 > self.velocity_max {
-            self.velocity.0 = self.velocity_max;
+        if self.velocity.x > self.velocity_max {
+            self.velocity.x = self.velocity_max;
         }
-        if self.velocity.0 < -self.velocity_max {
-            self.velocity.0 = -self.velocity_max;
+        if self.velocity.x < -self.velocity_max {
+            self.velocity.x = -self.velocity_max;
         }
-        if self.velocity.1 > self.velocity_max {
-            self.velocity.1 = self.velocity_max;
+        if self.velocity.y > self.velocity_max {
+            self.velocity.y = self.velocity_max;
         }
-        if self.velocity.1 < -self.velocity_max {
-            self.velocity.1 = -self.velocity_max;
+        if self.velocity.y < -self.velocity_max {
+            self.velocity.y = -self.velocity_max;
         }
     }
 }

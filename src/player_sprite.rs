@@ -3,11 +3,12 @@ use crate::{
     textures::{TextureID, Textures},
     types::Direction,
 };
+use cgmath::{EuclideanSpace, InnerSpace, Point2};
 use sdl2::{rect::Rect, render::Canvas, video::Window};
 use thiserror::Error;
 
 pub struct PlayerSprite {
-    location: (f32, f32),
+    location: Point2<f32>,
     direction: Direction,
     state: PlayerSpriteState,
     animation_frame: f32,
@@ -16,7 +17,7 @@ pub struct PlayerSprite {
 impl PlayerSprite {
     pub fn new() -> PlayerSprite {
         PlayerSprite {
-            location: (0.0, 0.0),
+            location: Point2::origin(),
             direction: Direction::Down,
             state: PlayerSpriteState::Idle,
             animation_frame: 0.0,
@@ -43,7 +44,7 @@ impl PlayerSprite {
             64,
             64,
         );
-        let dst = Rect::new(self.location.0 as i32, self.location.1 as i32, 256, 256);
+        let dst = Rect::new(self.location.x as i32, self.location.y as i32, 256, 256);
 
         canvas
             .copy(tex, src, dst)
@@ -63,9 +64,7 @@ impl PlayerSprite {
     }
 
     fn find_state(player: &Player) -> PlayerSpriteState {
-        let speed = f32::sqrt(
-            player.velocity.0 * player.velocity.0 + player.velocity.1 * player.velocity.1,
-        );
+        let speed = player.velocity.magnitude2();
         if speed >= RUN_SPEED_THRESHOLD {
             return if player.is_attack {
                 PlayerSpriteState::RunAttack
@@ -87,21 +86,21 @@ impl PlayerSprite {
     }
 
     fn find_direction(player: &Player) -> Direction {
-        if player.velocity.0 < 0.0 {
-            if player.velocity.0.abs() > player.velocity.1.abs() {
+        if player.velocity.x < 0.0 {
+            if player.velocity.x.abs() > player.velocity.y.abs() {
                 return Direction::Left;
             }
-            return if player.velocity.1 < 0.0 {
+            return if player.velocity.y < 0.0 {
                 Direction::Up
             } else {
                 Direction::Down
             };
         }
-        if player.velocity.0 > 0.0 {
-            if player.velocity.0.abs() > player.velocity.1.abs() {
+        if player.velocity.x > 0.0 {
+            if player.velocity.x.abs() > player.velocity.y.abs() {
                 return Direction::Right;
             }
-            return if player.velocity.1 < 0.0 {
+            return if player.velocity.y < 0.0 {
                 Direction::Up
             } else {
                 Direction::Down
