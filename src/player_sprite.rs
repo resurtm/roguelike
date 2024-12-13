@@ -1,4 +1,5 @@
 use crate::{
+    camera::Camera,
     player::Player,
     textures::{TextureID, Textures},
     types::Direction,
@@ -26,6 +27,7 @@ impl PlayerSprite {
 
     pub(crate) fn render(
         &self,
+        camera: &Camera,
         canvas: &mut Canvas<Window>,
         textures: &Textures,
     ) -> Result<(), PlayerSpriteError> {
@@ -44,7 +46,12 @@ impl PlayerSprite {
             64,
             64,
         );
-        let dst = Rect::new(self.location.x as i32, self.location.y as i32, 256, 256);
+        let dst = Rect::new(
+            (-camera.pos.x + self.location.x) as i32,
+            (-camera.pos.y + self.location.y) as i32,
+            256,
+            256,
+        );
 
         canvas
             .copy(tex, src, dst)
@@ -149,7 +156,7 @@ const LOOKUP: [(PlayerSpriteState, TextureID); 8] = [
 ];
 
 #[derive(Error, Debug)]
-pub(crate) enum PlayerSpriteError {
+pub enum PlayerSpriteError {
     #[error("texture lookup error")]
     TextureLookup(),
 

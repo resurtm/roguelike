@@ -1,5 +1,8 @@
-use crate::level::{Level, LevelBlockType};
-use crate::textures::{TextureID, Textures};
+use crate::{
+    camera::Camera,
+    level::{Level, LevelBlockType},
+    textures::{TextureID, Textures},
+};
 use sdl2::{rect::Rect, render::Canvas, video::Window};
 use thiserror::Error;
 
@@ -29,6 +32,7 @@ impl LevelDisplay {
 
     pub(crate) fn render(
         &self,
+        camera: &Camera,
         canvas: &mut Canvas<Window>,
         textures: &Textures,
     ) -> Result<(), LevelDisplayError> {
@@ -45,8 +49,8 @@ impl LevelDisplay {
 
                 let src = Rect::new(0, 0, 32, 32);
                 let dst = Rect::new(
-                    x as i32 * TILE_SIZE as i32,
-                    y as i32 * TILE_SIZE as i32,
+                    -camera.pos.x as i32 + x as i32 * TILE_SIZE as i32,
+                    -camera.pos.y as i32 + y as i32 * TILE_SIZE as i32,
                     TILE_SIZE as u32,
                     TILE_SIZE as u32,
                 );
@@ -61,7 +65,7 @@ impl LevelDisplay {
 }
 
 #[derive(PartialEq)]
-enum LevelDisplayCell {
+pub(crate) enum LevelDisplayCell {
     Free,
     Wall,
 }
@@ -74,7 +78,7 @@ const LOOKUP: [(LevelDisplayCell, TextureID); 2] = [
 ];
 
 #[derive(Error, Debug)]
-pub(crate) enum LevelDisplayError {
+pub enum LevelDisplayError {
     #[error("texture lookup error")]
     TextureLookup(),
 

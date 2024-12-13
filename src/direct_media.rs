@@ -76,7 +76,7 @@ impl DirectMedia {
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum DirectMediaError {
+pub enum DirectMediaError {
     #[error("context error: {0}")]
     Context(String),
 

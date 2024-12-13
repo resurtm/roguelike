@@ -1,7 +1,7 @@
 use std::fs;
 
 pub(crate) struct Level {
-    pub map: Vec<Vec<LevelBlockType>>,
+    pub(crate) map: Vec<Vec<LevelBlockType>>,
 }
 
 impl Level {

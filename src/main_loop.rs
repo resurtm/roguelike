@@ -1,4 +1,5 @@
 use crate::{
+    camera::Camera,
     direct_media::{DirectMedia, DirectMediaError},
     level::Level,
     level_display::{LevelDisplay, LevelDisplayError},
@@ -12,6 +13,7 @@ pub struct MainLoop {
     direct_media: DirectMedia,
     textures: Textures,
     input: Input,
+    camera: Camera,
 
     player: Player,
     player_sprite: PlayerSprite,
@@ -24,6 +26,7 @@ impl MainLoop {
         let mut direct_media = DirectMedia::new()?;
         let textures = Textures::new(&mut direct_media)?;
         let input = Input::new();
+        let camera = Camera::new();
 
         let player = Player::new();
         let player_sprite = PlayerSprite::new();
@@ -34,6 +37,7 @@ impl MainLoop {
             direct_media,
             textures,
             input,
+            camera,
 
             player,
             player_sprite,
@@ -44,15 +48,21 @@ impl MainLoop {
 
     pub fn run(&mut self) -> Result<(), MainLoopError> {
         while self.direct_media.handle_events(&mut self.input) {
+            // advance & sync
+            self.camera.sync(&self.input);
             self.player.advance(&self.input);
             self.player_sprite.advance(&self.player);
             self.level_draw.sync(&self.level);
 
+            // present & render
             self.direct_media.present_start();
             self.level_draw
-                .render(&mut self.direct_media.canvas, &self.textures)?;
-            self.player_sprite
-                .render(&mut self.direct_media.canvas, &self.textures)?;
+                .render(&self.camera, &mut self.direct_media.canvas, &self.textures)?;
+            self.player_sprite.render(
+                &self.camera,
+                &mut self.direct_media.canvas,
+                &self.textures,
+            )?;
             self.direct_media.present_end();
         }
         Ok(())
