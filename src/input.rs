@@ -1,17 +1,17 @@
 use sdl2::{event::Event, keyboard::Keycode};
 
-pub struct Input {
-    pub key_up: bool,
-    pub key_down: bool,
+pub(crate) struct Input {
+    pub(crate) key_up: bool,
+    pub(crate) key_down: bool,
 
-    pub key_left: bool,
-    pub key_right: bool,
+    pub(crate) key_left: bool,
+    pub(crate) key_right: bool,
 
-    pub key_space: bool,
+    pub(crate) key_space: bool,
 }
 
 impl Input {
-    pub fn new() -> Input {
+    pub(crate) fn new() -> Input {
         Input {
             key_up: false,
             key_down: false,
@@ -23,7 +23,7 @@ impl Input {
         }
     }
 
-    pub fn handle_key_event(&mut self, event: &Event) {
+    pub(crate) fn handle_key_event(&mut self, event: &Event) {
         match event {
             Event::KeyDown {
                 keycode: Some(k), ..

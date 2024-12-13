@@ -1,8 +1,11 @@
-use crate::direct_media::{DirectMedia, DirectMediaError};
-use crate::level::Level;
-use crate::player_sprite::PlayerSpriteError;
-use crate::textures::{Textures, TexturesError};
-use crate::{input::Input, player::Player, player_sprite::PlayerSprite};
+use crate::{
+    direct_media::{DirectMedia, DirectMediaError},
+    level::Level,
+    level_display::{LevelDisplay, LevelDisplayError},
+    player_sprite::PlayerSpriteError,
+    textures::{Textures, TexturesError},
+    {input::Input, player::Player, player_sprite::PlayerSprite},
+};
 use thiserror::Error;
 
 pub struct MainLoop {
@@ -13,6 +16,7 @@ pub struct MainLoop {
     player: Player,
     player_sprite: PlayerSprite,
     level: Level,
+    level_draw: LevelDisplay,
 }
 
 impl MainLoop {
@@ -24,8 +28,7 @@ impl MainLoop {
         let player = Player::new();
         let player_sprite = PlayerSprite::new();
         let level = Level::new();
-
-        println!("{:?}", level.cells);
+        let level_draw = LevelDisplay::new();
 
         Ok(MainLoop {
             direct_media,
@@ -35,6 +38,7 @@ impl MainLoop {
             player,
             player_sprite,
             level,
+            level_draw,
         })
     }
 
@@ -42,8 +46,11 @@ impl MainLoop {
         while self.direct_media.handle_events(&mut self.input) {
             self.player.advance(&self.input);
             self.player_sprite.advance(&self.player);
+            self.level_draw.sync(&self.level);
 
             self.direct_media.present_start();
+            self.level_draw
+                .render(&mut self.direct_media.canvas, &self.textures)?;
             self.player_sprite
                 .render(&mut self.direct_media.canvas, &self.textures)?;
             self.direct_media.present_end();
@@ -62,4 +69,7 @@ pub enum MainLoopError {
 
     #[error("player sprite render error: {0}")]
     PlayerSpriteRender(#[from] PlayerSpriteError),
+
+    #[error("level sprite render error: {0}")]
+    LevelDisplayError(#[from] LevelDisplayError),
 }

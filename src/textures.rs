@@ -4,12 +4,12 @@ use thiserror::Error;
 
 use crate::direct_media::DirectMedia;
 
-pub struct Textures {
+pub(crate) struct Textures {
     map: HashMap<TextureID, Texture>,
 }
 
 impl Textures {
-    pub fn new(direct_media: &mut DirectMedia) -> Result<Textures, TexturesError> {
+    pub(crate) fn new(direct_media: &mut DirectMedia) -> Result<Textures, TexturesError> {
         let mut map = HashMap::new();
 
         for (texture_id, path) in LOOKUP.iter() {
@@ -23,12 +23,12 @@ impl Textures {
         Ok(Textures { map })
     }
 
-    pub fn get(&self, texture_id: &TextureID) -> Option<&Texture> {
+    pub(crate) fn get(&self, texture_id: &TextureID) -> Option<&Texture> {
         self.map.get(texture_id)
     }
 }
 
-const LOOKUP: [(TextureID, &str); 8] = [
+const LOOKUP: [(TextureID, &str); 11] = [
     (
         TextureID::Orc3Attack,
         "./assets/orc/png/Orc3/orc3_attack/orc3_attack_full.png",
@@ -61,10 +61,13 @@ const LOOKUP: [(TextureID, &str); 8] = [
         TextureID::Orc3WalkAttack,
         "./assets/orc/png/Orc3/orc3_walk_attack/orc3_walk_attack_full.png",
     ),
+    (TextureID::TileRed, "./assets/tile/tile-red.png"),
+    (TextureID::TileGreen, "./assets/tile/tile-green.png"),
+    (TextureID::TileBlue, "./assets/tile/tile-blue.png"),
 ];
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum TextureID {
+pub(crate) enum TextureID {
     Orc3Attack,
     Orc3Death,
     Orc3Hurt,
@@ -73,6 +76,10 @@ pub enum TextureID {
     Orc3RunAttack,
     Orc3Walk,
     Orc3WalkAttack,
+
+    TileRed,
+    TileGreen,
+    TileBlue,
 }
 
 #[derive(Error, Debug)]

@@ -10,15 +10,15 @@ use sdl2::{
 use std::{thread::sleep, time::Duration};
 use thiserror::Error;
 
-pub struct DirectMedia {
+pub(crate) struct DirectMedia {
     event_pump: EventPump,
-    pub canvas: Canvas<Window>,
-    pub texture_creator: TextureCreator<WindowContext>,
+    pub(crate) canvas: Canvas<Window>,
+    pub(crate) texture_creator: TextureCreator<WindowContext>,
     is_alive: bool,
 }
 
 impl DirectMedia {
-    pub fn new() -> Result<DirectMedia, DirectMediaError> {
+    pub(crate) fn new() -> Result<DirectMedia, DirectMediaError> {
         let sdl_context = sdl2::init().map_err(|err_msg| DirectMediaError::Context(err_msg))?;
 
         let event_pump = sdl_context
@@ -49,7 +49,7 @@ impl DirectMedia {
         })
     }
 
-    pub fn handle_events(&mut self, input: &mut Input) -> bool {
+    pub(crate) fn handle_events(&mut self, input: &mut Input) -> bool {
         for event in self.event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -64,19 +64,19 @@ impl DirectMedia {
         self.is_alive
     }
 
-    pub fn present_start(&mut self) {
+    pub(crate) fn present_start(&mut self) {
         self.canvas.set_draw_color(Color::RGB(22, 22, 55));
         self.canvas.clear();
     }
 
-    pub fn present_end(&mut self) {
+    pub(crate) fn present_end(&mut self) {
         self.canvas.present();
         sleep(Duration::new(0, 1_000_000_000u32 / 60)); // 1_000 msecs / 60
     }
 }
 
 #[derive(Error, Debug)]
-pub enum DirectMediaError {
+pub(crate) enum DirectMediaError {
     #[error("context error: {0}")]
     Context(String),
 

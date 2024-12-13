@@ -7,7 +7,7 @@ use cgmath::{EuclideanSpace, InnerSpace, Point2};
 use sdl2::{rect::Rect, render::Canvas, video::Window};
 use thiserror::Error;
 
-pub struct PlayerSprite {
+pub(crate) struct PlayerSprite {
     location: Point2<f32>,
     direction: Direction,
     state: PlayerSpriteState,
@@ -15,7 +15,7 @@ pub struct PlayerSprite {
 }
 
 impl PlayerSprite {
-    pub fn new() -> PlayerSprite {
+    pub(crate) fn new() -> PlayerSprite {
         PlayerSprite {
             location: Point2::origin(),
             direction: Direction::Down,
@@ -24,7 +24,7 @@ impl PlayerSprite {
         }
     }
 
-    pub fn render(
+    pub(crate) fn render(
         &self,
         canvas: &mut Canvas<Window>,
         textures: &Textures,
@@ -52,7 +52,7 @@ impl PlayerSprite {
         Ok(())
     }
 
-    pub fn advance(&mut self, player: &Player) {
+    pub(crate) fn advance(&mut self, player: &Player) {
         self.location = player.position;
         self.direction = Self::find_direction(player);
         self.state = Self::find_state(player);
@@ -149,7 +149,7 @@ const LOOKUP: [(PlayerSpriteState, TextureID); 8] = [
 ];
 
 #[derive(Error, Debug)]
-pub enum PlayerSpriteError {
+pub(crate) enum PlayerSpriteError {
     #[error("texture lookup error")]
     TextureLookup(),
 

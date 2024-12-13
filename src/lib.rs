@@ -1,6 +1,8 @@
+mod camera;
 mod direct_media;
 mod input;
 mod level;
+mod level_display;
 pub mod main_loop;
 mod player;
 mod player_sprite;

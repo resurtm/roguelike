@@ -1,4 +1,4 @@
-pub enum Direction {
+pub(crate) enum Direction {
     Up,
     Down,
     Left,
