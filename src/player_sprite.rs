@@ -47,8 +47,8 @@ impl PlayerSprite {
             64,
         );
         let dst = Rect::new(
-            (-camera.pos.x + self.location.x) as i32,
-            (-camera.pos.y + self.location.y) as i32,
+            (-camera.position.x + (1920 / 2) as f32 + self.location.x) as i32 - 128,
+            (-camera.position.y + (1200 / 2) as f32 + self.location.y) as i32 - 128,
             256,
             256,
         );

@@ -49,8 +49,8 @@ impl LevelDisplay {
 
                 let src = Rect::new(0, 0, 32, 32);
                 let dst = Rect::new(
-                    -camera.pos.x as i32 + x as i32 * TILE_SIZE as i32,
-                    -camera.pos.y as i32 + y as i32 * TILE_SIZE as i32,
+                    -camera.position.x as i32 + (1920 / 2) as i32 + x as i32 * TILE_SIZE as i32,
+                    -camera.position.y as i32 + (1200 / 2) as i32 + y as i32 * TILE_SIZE as i32,
                     TILE_SIZE as u32,
                     TILE_SIZE as u32,
                 );

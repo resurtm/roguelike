@@ -50,6 +50,7 @@ impl MainLoop {
         while self.direct_media.handle_events(&mut self.input) {
             // advance & sync
             self.camera.sync(&self.input);
+            self.camera.follow(&self.player);
             self.player.advance(&self.input);
             self.player_sprite.advance(&self.player);
             self.level_draw.sync(&self.level);

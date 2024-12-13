@@ -1,28 +1,37 @@
-use crate::input::Input;
-use cgmath::Point2;
+use crate::{input::Input, player::Player};
+use cgmath::{InnerSpace, MetricSpace, Point2};
 
 pub(crate) struct Camera {
-    pub(crate) pos: Point2<f32>,
+    pub(crate) position: Point2<f32>,
 }
 
 impl Camera {
     pub(crate) fn new() -> Camera {
         Camera {
-            pos: Point2::new(0.0, 0.0),
+            // position: Point2::new((1920 / 2) as f32, (1200 / 2) as f32),
+            position: Point2::new(0.0, 0.0),
         }
     }
+
     pub(crate) fn sync(&mut self, input: &Input) {
         if input.key_w {
-            self.pos.y -= 15.0;
+            self.position.y -= 10.0;
         }
         if input.key_s {
-            self.pos.y += 15.0;
+            self.position.y += 10.0;
         }
         if input.key_a {
-            self.pos.x -= 15.0;
+            self.position.x -= 10.0;
         }
         if input.key_d {
-            self.pos.x += 15.0;
+            self.position.x += 10.0;
+        }
+    }
+
+    pub(crate) fn follow(&mut self, player: &Player) {
+        if self.position.distance(player.position) > 500.0 {
+            let dir = (player.position - self.position).normalize();
+            self.position += dir * 3.5;
         }
     }
 }
