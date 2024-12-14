@@ -35,8 +35,11 @@ impl<'b> LevelDisplay<'b> {
 
         for (x, its) in level.map.iter().enumerate() {
             for (y, it) in its.iter().enumerate() {
-                self.map[x][y] =
-                    Self::pick_display_cell(&level.map, it.clone(), x as i32, y as i32);
+                let cell = Self::pick_display_cell(&level.map, it.clone(), x as i32, y as i32);
+                self.map[x][y] = match cell {
+                    LevelDisplayCell::Floor => FLOOR_LOOKUP[y % 3][x % 4].clone(),
+                    _ => cell,
+                }
             }
         }
     }
@@ -75,6 +78,7 @@ impl<'b> LevelDisplay<'b> {
         const TL: usize = 7;
 
         if c == BT::Wall {
+            // straight vertical and horizontal
             if p[R] == BT::Wall && p[L] == BT::Wall && p[B] == BT::Free {
                 return LevelDisplayCell::WallTop0;
             }
@@ -88,7 +92,20 @@ impl<'b> LevelDisplay<'b> {
                 return LevelDisplayCell::WallLeft0;
             }
 
-            // corners
+            // outward corners
+            if p[T] == BT::Free && p[L] == BT::Free && p[R] == BT::Wall && p[B] == BT::Wall {
+                return LevelDisplayCell::WallTopLeftOuter;
+            }
+            if p[T] == BT::Free && p[L] == BT::Wall && p[R] == BT::Free && p[B] == BT::Wall {
+                return LevelDisplayCell::WallTopRightOuter;
+            }
+            if p[T] == BT::Wall && p[L] == BT::Free && p[R] == BT::Wall && p[B] == BT::Free
+                || p[T] == BT::Wall && p[L] == BT::Wall && p[R] == BT::Free && p[B] == BT::Free
+            {
+                return LevelDisplayCell::WallTop0;
+            }
+
+            // inward corners
             if p[B] == BT::Wall && p[L] == BT::Wall && p[BL] == BT::Free {
                 return LevelDisplayCell::WallTopRight;
             }
@@ -179,6 +196,9 @@ pub(crate) enum LevelDisplayCell {
     WallBottomLeft,
     WallBottomRight,
 
+    WallTopLeftOuter,
+    WallTopRightOuter,
+
     WallTop, // generic tile
     WallTop0,
     WallTop1,
@@ -202,15 +222,29 @@ pub(crate) enum LevelDisplayCell {
     WallRight2,
 
     Floor, // generic tile
+    Floor00,
+    Floor10,
+    Floor20,
+    Floor30,
+    Floor01,
+    Floor11,
+    Floor21,
+    Floor31,
+    Floor02,
+    Floor12,
+    Floor22,
+    Floor32,
 
     NotAvailable,
 }
 
-const LOOKUP: [(LevelDisplayCell, u8, u8); 19] = [
+const LOOKUP: [(LevelDisplayCell, u8, u8); 33] = [
     (LevelDisplayCell::WallTopLeft, 0, 0),
     (LevelDisplayCell::WallTopRight, 5, 0),
     (LevelDisplayCell::WallBottomLeft, 0, 4),
     (LevelDisplayCell::WallBottomRight, 5, 4),
+    (LevelDisplayCell::WallTopLeftOuter, 0, 5),
+    (LevelDisplayCell::WallTopRightOuter, 3, 5),
     (LevelDisplayCell::WallTop0, 1, 0),
     (LevelDisplayCell::WallTop1, 2, 0),
     (LevelDisplayCell::WallTop2, 3, 0),
@@ -226,6 +260,39 @@ const LOOKUP: [(LevelDisplayCell, u8, u8); 19] = [
     (LevelDisplayCell::WallRight1, 5, 2),
     (LevelDisplayCell::WallRight2, 5, 3),
     (LevelDisplayCell::Floor, 1, 1),
+    (LevelDisplayCell::Floor00, 6, 0),
+    (LevelDisplayCell::Floor10, 7, 0),
+    (LevelDisplayCell::Floor20, 8, 0),
+    (LevelDisplayCell::Floor30, 9, 0),
+    (LevelDisplayCell::Floor01, 6, 1),
+    (LevelDisplayCell::Floor11, 7, 1),
+    (LevelDisplayCell::Floor21, 8, 1),
+    (LevelDisplayCell::Floor31, 9, 1),
+    (LevelDisplayCell::Floor02, 6, 2),
+    (LevelDisplayCell::Floor12, 7, 2),
+    (LevelDisplayCell::Floor22, 8, 2),
+    (LevelDisplayCell::Floor32, 9, 2),
+];
+
+const FLOOR_LOOKUP: [[LevelDisplayCell; 4]; 3] = [
+    [
+        LevelDisplayCell::Floor00,
+        LevelDisplayCell::Floor10,
+        LevelDisplayCell::Floor20,
+        LevelDisplayCell::Floor30,
+    ],
+    [
+        LevelDisplayCell::Floor01,
+        LevelDisplayCell::Floor11,
+        LevelDisplayCell::Floor21,
+        LevelDisplayCell::Floor31,
+    ],
+    [
+        LevelDisplayCell::Floor02,
+        LevelDisplayCell::Floor12,
+        LevelDisplayCell::Floor22,
+        LevelDisplayCell::Floor32,
+    ],
 ];
 
 const TILE_SIZE: u8 = 96;

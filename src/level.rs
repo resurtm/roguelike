@@ -6,14 +6,14 @@ pub(crate) struct Level {
 
 impl Level {
     pub(crate) fn new() -> Level {
-        let level = fs::read_to_string("./assets/level.txt").expect("file");
+        let level = fs::read_to_string("./assets/level0.txt").expect("file");
         let lines: Vec<&str> = level.lines().collect();
 
         let mut map = Vec::new();
         for _ in 0..lines[0].len() {
             let mut row = Vec::new();
             for _ in 0..lines.len() {
-                row.push(LevelBlockType::Free);
+                row.push(LevelBlockType::Void);
             }
             map.push(row);
         }

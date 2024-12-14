@@ -65,7 +65,7 @@ impl DirectMedia {
     }
 
     pub(crate) fn present_start(&mut self) {
-        self.canvas.set_draw_color(Color::RGB(22, 22, 55));
+        self.canvas.set_draw_color(Color::RGB(37, 19, 26));
         self.canvas.clear();
     }
 

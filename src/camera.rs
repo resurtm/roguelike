@@ -8,7 +8,7 @@ pub(crate) struct Camera {
 impl Camera {
     pub(crate) fn new() -> Camera {
         Camera {
-            position: Point2::new(450.0, 350.0),
+            position: Point2::new(450.0, 300.0),
         }
     }
 
@@ -28,7 +28,7 @@ impl Camera {
     }
 
     pub(crate) fn follow(&mut self, player: &Player) {
-        if self.position.distance(player.position) > 500.0 {
+        if self.position.distance(player.position) > 400.0 {
             let dir = (player.position - self.position).normalize();
             self.position += dir * 3.5;
         }
