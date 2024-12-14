@@ -15,8 +15,7 @@ pub(crate) struct Player {
 impl Player {
     pub(crate) fn new() -> Player {
         Player {
-            // position: Point2::new(250.0, 250.0),
-            position: Point2::new(0.0, 0.0),
+            position: Point2::new(450.0, 350.0),
 
             velocity: Vector2::new(0.0, 0.0),
             velocity_delta: 0.35,

@@ -1,5 +1,5 @@
 use sdl2::{image::LoadTexture, render::Texture};
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 use thiserror::Error;
 
 use crate::direct_media::DirectMedia;
@@ -28,7 +28,7 @@ impl Textures {
     }
 }
 
-const LOOKUP: [(TextureID, &str); 11] = [
+const LOOKUP: [(TextureID, &str); 13] = [
     (
         TextureID::Orc3Attack,
         "./assets/orc/png/Orc3/orc3_attack/orc3_attack_full.png",
@@ -64,6 +64,11 @@ const LOOKUP: [(TextureID, &str); 11] = [
     (TextureID::TileRed, "./assets/tile/tile-red.png"),
     (TextureID::TileGreen, "./assets/tile/tile-green.png"),
     (TextureID::TileBlue, "./assets/tile/tile-blue.png"),
+    (TextureID::TileNotAvailable, "./assets/tile/tile-na.png"),
+    (
+        TextureID::DungeonTileset,
+        "./assets/dungeon/Dungeon_Tileset.png",
+    ),
 ];
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -80,6 +85,15 @@ pub(crate) enum TextureID {
     TileRed,
     TileGreen,
     TileBlue,
+    TileNotAvailable,
+
+    DungeonTileset,
+}
+
+impl fmt::Display for TextureID {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 #[derive(Error, Debug)]

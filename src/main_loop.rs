@@ -1,15 +1,16 @@
 use crate::{
     camera::Camera,
     direct_media::{DirectMedia, DirectMediaError},
+    input::Input,
     level::Level,
     level_display::{LevelDisplay, LevelDisplayError},
-    player_sprite::PlayerSpriteError,
+    player::Player,
+    player_sprite::{PlayerSprite, PlayerSpriteError},
     textures::{Textures, TexturesError},
-    {input::Input, player::Player, player_sprite::PlayerSprite},
 };
 use thiserror::Error;
 
-pub struct MainLoop {
+pub struct MainLoop<'a> {
     direct_media: DirectMedia,
     textures: Textures,
     input: Input,
@@ -18,11 +19,11 @@ pub struct MainLoop {
     player: Player,
     player_sprite: PlayerSprite,
     level: Level,
-    level_draw: LevelDisplay,
+    level_draw: LevelDisplay<'a>,
 }
 
-impl MainLoop {
-    pub fn new() -> Result<MainLoop, MainLoopError> {
+impl<'b> MainLoop<'b> {
+    pub fn new<'a>() -> Result<MainLoop<'a>, MainLoopError> {
         let mut direct_media = DirectMedia::new()?;
         let textures = Textures::new(&mut direct_media)?;
         let input = Input::new();
@@ -46,19 +47,21 @@ impl MainLoop {
         })
     }
 
-    pub fn run(&mut self) -> Result<(), MainLoopError> {
+    pub fn run<'a: 'b>(&'a mut self) -> Result<(), MainLoopError> {
+        self.level_draw.sync(&self.level);
+        self.level_draw.load_textures(&self.textures)?;
+
         while self.direct_media.handle_events(&mut self.input) {
             // advance & sync
             self.camera.sync(&self.input);
             self.camera.follow(&self.player);
             self.player.advance(&self.input);
             self.player_sprite.advance(&self.player);
-            self.level_draw.sync(&self.level);
 
             // present & render
             self.direct_media.present_start();
             self.level_draw
-                .render(&self.camera, &mut self.direct_media.canvas, &self.textures)?;
+                .render(&self.camera, &mut self.direct_media.canvas)?;
             self.player_sprite.render(
                 &self.camera,
                 &mut self.direct_media.canvas,
@@ -78,9 +81,9 @@ pub enum MainLoopError {
     #[error("textures error: {0}")]
     Textures(#[from] TexturesError),
 
+    #[error("level display error: {0}")]
+    LevelDisplayError(#[from] LevelDisplayError),
+
     #[error("player sprite render error: {0}")]
     PlayerSpriteRender(#[from] PlayerSpriteError),
-
-    #[error("level sprite render error: {0}")]
-    LevelDisplayError(#[from] LevelDisplayError),
 }

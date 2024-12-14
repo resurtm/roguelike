@@ -22,7 +22,8 @@ impl Level {
             for (x, ch) in line.chars().into_iter().enumerate() {
                 map[x][y] = match ch {
                     '#' => LevelBlockType::Wall,
-                    '.' | _ => LevelBlockType::Free,
+                    '.' => LevelBlockType::Free,
+                    ' ' | _ => LevelBlockType::Void,
                 };
             }
         }
@@ -31,8 +32,9 @@ impl Level {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) enum LevelBlockType {
-    Free,
     Wall,
+    Free,
+    Void,
 }

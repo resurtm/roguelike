@@ -8,8 +8,7 @@ pub(crate) struct Camera {
 impl Camera {
     pub(crate) fn new() -> Camera {
         Camera {
-            // position: Point2::new((1920 / 2) as f32, (1200 / 2) as f32),
-            position: Point2::new(0.0, 0.0),
+            position: Point2::new(450.0, 350.0),
         }
     }
 
