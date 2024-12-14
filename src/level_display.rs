@@ -69,11 +69,42 @@ impl<'b> LevelDisplay<'b> {
         const R: usize = 1;
         const B: usize = 2;
         const L: usize = 3;
+        const TR: usize = 4;
+        const BR: usize = 5;
+        const BL: usize = 6;
+        const TL: usize = 7;
 
         if c == BT::Wall {
             if p[R] == BT::Wall && p[L] == BT::Wall && p[B] == BT::Free {
                 return LevelDisplayCell::WallTop0;
             }
+            if p[T] == BT::Wall && p[B] == BT::Wall && p[L] == BT::Free {
+                return LevelDisplayCell::WallRight0;
+            }
+            if p[R] == BT::Wall && p[L] == BT::Wall && p[T] == BT::Free {
+                return LevelDisplayCell::WallBottom0;
+            }
+            if p[T] == BT::Wall && p[B] == BT::Wall && p[R] == BT::Free {
+                return LevelDisplayCell::WallLeft0;
+            }
+
+            // corners
+            if p[B] == BT::Wall && p[L] == BT::Wall && p[BL] == BT::Free {
+                return LevelDisplayCell::WallTopRight;
+            }
+            if p[T] == BT::Wall && p[L] == BT::Wall && p[TL] == BT::Free {
+                return LevelDisplayCell::WallBottomRight;
+            }
+            if p[T] == BT::Wall && p[R] == BT::Wall && p[TR] == BT::Free {
+                return LevelDisplayCell::WallBottomLeft;
+            }
+            if p[B] == BT::Wall && p[R] == BT::Wall && p[BR] == BT::Free {
+                return LevelDisplayCell::WallTopLeft;
+            }
+        }
+
+        if c == BT::Free {
+            return LevelDisplayCell::Floor;
         }
 
         LevelDisplayCell::NotAvailable
@@ -170,10 +201,12 @@ pub(crate) enum LevelDisplayCell {
     WallRight1,
     WallRight2,
 
+    Floor, // generic tile
+
     NotAvailable,
 }
 
-const LOOKUP: [(LevelDisplayCell, u8, u8); 18] = [
+const LOOKUP: [(LevelDisplayCell, u8, u8); 19] = [
     (LevelDisplayCell::WallTopLeft, 0, 0),
     (LevelDisplayCell::WallTopRight, 5, 0),
     (LevelDisplayCell::WallBottomLeft, 0, 4),
@@ -192,6 +225,7 @@ const LOOKUP: [(LevelDisplayCell, u8, u8); 18] = [
     (LevelDisplayCell::WallRight0, 5, 1),
     (LevelDisplayCell::WallRight1, 5, 2),
     (LevelDisplayCell::WallRight2, 5, 3),
+    (LevelDisplayCell::Floor, 1, 1),
 ];
 
 const TILE_SIZE: u8 = 96;
