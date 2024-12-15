@@ -21,42 +21,27 @@ impl DirectMedia {
     pub(crate) fn new() -> Result<DirectMedia, DirectMediaError> {
         let sdl_context = sdl2::init().map_err(|err_msg| DirectMediaError::Context(err_msg))?;
 
-        let event_pump = sdl_context
-            .event_pump()
-            .map_err(|err_msg| DirectMediaError::EventPump(err_msg))?;
+        let event_pump =
+            sdl_context.event_pump().map_err(|err_msg| DirectMediaError::EventPump(err_msg))?;
 
-        let video_subsystem = sdl_context
-            .video()
-            .map_err(|err_msg| DirectMediaError::Video(err_msg))?;
+        let video_subsystem =
+            sdl_context.video().map_err(|err_msg| DirectMediaError::Video(err_msg))?;
 
-        let window = video_subsystem
-            .window("roguelike", 1920, 1200)
-            .position_centered()
-            .build()?;
+        let window = video_subsystem.window("roguelike", 1920, 1200).position_centered().build()?;
 
-        let canvas = window
-            .into_canvas()
-            .build()
-            .map_err(|err| DirectMediaError::Canvas(err))?;
+        let canvas = window.into_canvas().build().map_err(|err| DirectMediaError::Canvas(err))?;
 
         let texture_creator = canvas.texture_creator();
 
-        Ok(DirectMedia {
-            event_pump,
-            canvas,
-            texture_creator,
-            is_alive: true,
-        })
+        Ok(DirectMedia { event_pump, canvas, texture_creator, is_alive: true })
     }
 
     pub(crate) fn handle_events(&mut self, input: &mut Input) -> bool {
         for event in self.event_pump.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => self.is_alive = false,
+                Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                    self.is_alive = false
+                }
                 Event::KeyUp { .. } | Event::KeyDown { .. } => input.handle_key_event(&event),
                 _ => {}
             }

@@ -1,7 +1,8 @@
+use crate::types::LevelBlock;
 use std::fs;
 
 pub(crate) struct Level {
-    pub(crate) map: Vec<Vec<LevelBlockType>>,
+    pub(crate) map: Vec<Vec<LevelBlock>>,
 }
 
 impl Level {
@@ -13,7 +14,7 @@ impl Level {
         for _ in 0..lines[0].len() {
             let mut row = Vec::new();
             for _ in 0..lines.len() {
-                row.push(LevelBlockType::Void);
+                row.push(LevelBlock::Void);
             }
             map.push(row);
         }
@@ -21,20 +22,13 @@ impl Level {
         for (y, line) in lines.iter().enumerate() {
             for (x, ch) in line.chars().into_iter().enumerate() {
                 map[x][y] = match ch {
-                    '#' => LevelBlockType::Wall,
-                    '.' => LevelBlockType::Free,
-                    ' ' | _ => LevelBlockType::Void,
+                    '#' => LevelBlock::Wall,
+                    '.' => LevelBlock::Free,
+                    ' ' | _ => LevelBlock::Void,
                 };
             }
         }
 
         Level { map }
     }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub(crate) enum LevelBlockType {
-    Wall,
-    Free,
-    Void,
 }

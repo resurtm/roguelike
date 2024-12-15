@@ -33,9 +33,7 @@ impl Input {
 
     pub(crate) fn handle_key_event(&mut self, event: &Event) {
         match event {
-            Event::KeyDown {
-                keycode: Some(k), ..
-            } => match *k {
+            Event::KeyDown { keycode: Some(k), .. } => match *k {
                 Keycode::UP => self.key_up = true,
                 Keycode::DOWN => self.key_down = true,
                 Keycode::LEFT => self.key_left = true,
@@ -47,9 +45,7 @@ impl Input {
                 Keycode::SPACE => self.key_space = true,
                 _ => {}
             },
-            Event::KeyUp {
-                keycode: Some(k), ..
-            } => match *k {
+            Event::KeyUp { keycode: Some(k), .. } => match *k {
                 Keycode::UP => self.key_up = false,
                 Keycode::DOWN => self.key_down = false,
                 Keycode::LEFT => self.key_left = false,

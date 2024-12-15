@@ -4,3 +4,10 @@ pub(crate) enum Direction {
     Left,
     Right,
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub(crate) enum LevelBlock {
+    Free,
+    Wall,
+    Void,
+}

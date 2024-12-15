@@ -1,3 +1,5 @@
+use_small_heuristics = "Max"
+
 # uncomment the things below when they will appear in stable and not nightly
 # merge_imports = true
 # imports_granularity = "Crate"

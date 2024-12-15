@@ -7,9 +7,7 @@ pub(crate) struct Camera {
 
 impl Camera {
     pub(crate) fn new() -> Camera {
-        Camera {
-            position: Point2::new(450.0, 300.0),
-        }
+        Camera { position: Point2::new(450.0, 300.0) }
     }
 
     pub(crate) fn sync(&mut self, input: &Input) {

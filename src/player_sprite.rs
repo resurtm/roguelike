@@ -36,9 +36,7 @@ impl PlayerSprite {
             .find(|&x| x.0 == self.state)
             .ok_or(PlayerSpriteError::TextureLookup())?
             .1;
-        let tex = textures
-            .get(tex_id)
-            .ok_or(PlayerSpriteError::TextureGet())?;
+        let tex = textures.get(tex_id).ok_or(PlayerSpriteError::TextureGet())?;
 
         let src = Rect::new(
             64 * (self.animation_frame as i32),
@@ -53,9 +51,7 @@ impl PlayerSprite {
             256,
         );
 
-        canvas
-            .copy(tex, src, dst)
-            .map_err(|msg| PlayerSpriteError::CanvasCopy(msg))?;
+        canvas.copy(tex, src, dst).map_err(|msg| PlayerSpriteError::CanvasCopy(msg))?;
         Ok(())
     }
 
@@ -97,21 +93,13 @@ impl PlayerSprite {
             if player.velocity.x.abs() > player.velocity.y.abs() {
                 return Direction::Left;
             }
-            return if player.velocity.y < 0.0 {
-                Direction::Up
-            } else {
-                Direction::Down
-            };
+            return if player.velocity.y < 0.0 { Direction::Up } else { Direction::Down };
         }
         if player.velocity.x > 0.0 {
             if player.velocity.x.abs() > player.velocity.y.abs() {
                 return Direction::Right;
             }
-            return if player.velocity.y < 0.0 {
-                Direction::Up
-            } else {
-                Direction::Down
-            };
+            return if player.velocity.y < 0.0 { Direction::Up } else { Direction::Down };
         }
         Direction::Down
     }

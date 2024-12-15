@@ -60,8 +60,7 @@ impl<'b> MainLoop<'b> {
 
             // present & render
             self.direct_media.present_start();
-            self.level_draw
-                .render(&self.camera, &mut self.direct_media.canvas)?;
+            self.level_draw.render(&self.camera, &mut self.direct_media.canvas)?;
             self.player_sprite.render(
                 &self.camera,
                 &mut self.direct_media.canvas,

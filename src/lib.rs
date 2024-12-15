@@ -1,5 +1,6 @@
 mod camera;
 mod direct_media;
+mod dungeon_tiles;
 mod input;
 mod level;
 mod level_display;
