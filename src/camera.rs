@@ -1,4 +1,8 @@
-use crate::{input::Input, player::Player};
+use crate::{
+    consts::{START_POSITION_X, START_POSITION_Y},
+    input::Input,
+    player::Player,
+};
 use cgmath::{InnerSpace, MetricSpace, Point2};
 
 pub(crate) struct Camera {
@@ -7,28 +11,32 @@ pub(crate) struct Camera {
 
 impl Camera {
     pub(crate) fn new() -> Camera {
-        Camera { position: Point2::new(450.0, 300.0) }
+        Camera { position: Point2::new(START_POSITION_X, START_POSITION_Y) }
     }
 
-    pub(crate) fn sync(&mut self, input: &Input) {
+    pub(crate) fn sync_input(&mut self, input: &Input) {
         if input.key_w {
-            self.position.y -= 10.0;
+            self.position.y -= CAMERA_MANUAL_SPEED;
         }
         if input.key_s {
-            self.position.y += 10.0;
+            self.position.y += CAMERA_MANUAL_SPEED;
         }
         if input.key_a {
-            self.position.x -= 10.0;
+            self.position.x -= CAMERA_MANUAL_SPEED;
         }
         if input.key_d {
-            self.position.x += 10.0;
+            self.position.x += CAMERA_MANUAL_SPEED;
         }
     }
 
     pub(crate) fn follow(&mut self, player: &Player) {
-        if self.position.distance(player.position) > 400.0 {
+        if self.position.distance(player.position) > CAMERA_FOLLOW_THRESHOLD {
             let dir = (player.position - self.position).normalize();
-            self.position += dir * 3.5;
+            self.position += dir * CAMERA_FOLLOW_SPEED;
         }
     }
 }
+
+const CAMERA_MANUAL_SPEED: f32 = 10.0;
+const CAMERA_FOLLOW_SPEED: f32 = 3.5;
+const CAMERA_FOLLOW_THRESHOLD: f32 = 350.0;

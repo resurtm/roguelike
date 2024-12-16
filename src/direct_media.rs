@@ -1,4 +1,7 @@
-use crate::input::Input;
+use crate::{
+    consts::{WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH},
+    input::Input,
+};
 use sdl2::{
     event::Event,
     keyboard::Keycode,
@@ -19,20 +22,15 @@ pub(crate) struct DirectMedia {
 
 impl DirectMedia {
     pub(crate) fn new() -> Result<DirectMedia, DirectMediaError> {
-        let sdl_context = sdl2::init().map_err(|err_msg| DirectMediaError::Context(err_msg))?;
-
-        let event_pump =
-            sdl_context.event_pump().map_err(|err_msg| DirectMediaError::EventPump(err_msg))?;
-
-        let video_subsystem =
-            sdl_context.video().map_err(|err_msg| DirectMediaError::Video(err_msg))?;
-
-        let window = video_subsystem.window("roguelike", 1920, 1200).position_centered().build()?;
-
-        let canvas = window.into_canvas().build().map_err(|err| DirectMediaError::Canvas(err))?;
-
+        let sdl_context = sdl2::init().map_err(DirectMediaError::Context)?;
+        let event_pump = sdl_context.event_pump().map_err(DirectMediaError::EventPump)?;
+        let video_subsystem = sdl_context.video().map_err(DirectMediaError::Video)?;
+        let window = video_subsystem
+            .window(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT)
+            .position_centered()
+            .build()?;
+        let canvas = window.into_canvas().build().map_err(DirectMediaError::Canvas)?;
         let texture_creator = canvas.texture_creator();
-
         Ok(DirectMedia { event_pump, canvas, texture_creator, is_alive: true })
     }
 
@@ -50,15 +48,18 @@ impl DirectMedia {
     }
 
     pub(crate) fn present_start(&mut self) {
-        self.canvas.set_draw_color(Color::RGB(37, 19, 26));
+        self.canvas.set_draw_color(Color::RGB(BG_COLOR.0, BG_COLOR.1, BG_COLOR.2));
         self.canvas.clear();
     }
 
     pub(crate) fn present_end(&mut self) {
         self.canvas.present();
-        sleep(Duration::new(0, 1_000_000_000u32 / 60)); // 1_000 msecs / 60
+        sleep(Duration::new(0, FRAME_DELAY));
     }
 }
+
+const BG_COLOR: (u8, u8, u8) = (37, 19, 26);
+const FRAME_DELAY: u32 = 1_000_000_000 / 60; // 1_000 msecs / 60
 
 #[derive(Error, Debug)]
 pub enum DirectMediaError {

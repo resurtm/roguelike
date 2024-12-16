@@ -1,5 +1,6 @@
 use crate::{
     camera::Camera,
+    consts::{WINDOW_HEIGHT, WINDOW_WIDTH},
     player::Player,
     textures::{TextureID, Textures},
     types::Direction,
@@ -27,35 +28,31 @@ impl PlayerSprite {
 
     pub(crate) fn render(
         &self,
-        camera: &Camera,
-        canvas: &mut Canvas<Window>,
-        textures: &Textures,
+        cam: &Camera,
+        can: &mut Canvas<Window>,
+        tex: &Textures,
     ) -> Result<(), PlayerSpriteError> {
-        let tex_id = &LOOKUP
-            .iter()
-            .find(|&x| x.0 == self.state)
-            .ok_or(PlayerSpriteError::TextureLookup())?
-            .1;
-        let tex = textures.get(tex_id).ok_or(PlayerSpriteError::TextureGet())?;
-
+        let tex = tex.get(&self.find_texture_id()).ok_or(PlayerSpriteError::TextureGet())?;
         let src = Rect::new(
-            64 * (self.animation_frame as i32),
-            64 * self.find_texture_row() as i32,
-            64,
-            64,
+            SRC_SIZE as i32 * (self.animation_frame as i32),
+            SRC_SIZE as i32 * self.find_texture_row() as i32,
+            SRC_SIZE,
+            SRC_SIZE,
         );
         let dst = Rect::new(
-            (-camera.position.x + (1920 / 2) as f32 + self.location.x) as i32 - 128,
-            (-camera.position.y + (1200 / 2) as f32 + self.location.y) as i32 - 128,
-            256,
-            256,
+            (WINDOW_WIDTH / 2) as i32 - cam.position.x as i32 + self.location.x as i32
+                - (DST_SIZE / 2) as i32,
+            (WINDOW_HEIGHT / 2) as i32 - cam.position.y as i32 + self.location.y as i32
+                - (DST_SIZE / 2) as i32,
+            DST_SIZE,
+            DST_SIZE,
         );
 
-        canvas.copy(tex, src, dst).map_err(|msg| PlayerSpriteError::CanvasCopy(msg))?;
+        can.copy(tex, src, dst).map_err(PlayerSpriteError::CanvasCopy)?;
         Ok(())
     }
 
-    pub(crate) fn advance(&mut self, player: &Player) {
+    pub(crate) fn sync(&mut self, player: &Player) {
         self.location = player.position;
         self.direction = Self::find_direction(player);
         self.state = Self::find_state(player);
@@ -81,11 +78,11 @@ impl PlayerSprite {
                 PlayerSpriteState::Walk
             };
         }
-        return if player.is_attack {
+        if player.is_attack {
             PlayerSpriteState::IdleAttack
         } else {
             PlayerSpriteState::Idle
-        };
+        }
     }
 
     fn find_direction(player: &Player) -> Direction {
@@ -104,12 +101,25 @@ impl PlayerSprite {
         Direction::Down
     }
 
-    fn find_texture_row(&self) -> u8 {
+    fn find_texture_row(&self) -> u32 {
         match self.direction {
             Direction::Up => 1,
             Direction::Down => 0,
             Direction::Left => 2,
             Direction::Right => 3,
+        }
+    }
+
+    fn find_texture_id(&self) -> TextureID {
+        match self.state {
+            PlayerSpriteState::Idle => TextureID::Orc3Idle,
+            PlayerSpriteState::IdleAttack => TextureID::Orc3Attack,
+            PlayerSpriteState::Walk => TextureID::Orc3Walk,
+            PlayerSpriteState::WalkAttack => TextureID::Orc3WalkAttack,
+            PlayerSpriteState::Run => TextureID::Orc3Run,
+            PlayerSpriteState::RunAttack => TextureID::Orc3RunAttack,
+            PlayerSpriteState::Hurt => TextureID::Orc3Hurt,
+            PlayerSpriteState::Death => TextureID::Orc3Death,
         }
     }
 }
@@ -118,7 +128,10 @@ const WALK_SPEED_THRESHOLD: f32 = 0.5;
 const RUN_SPEED_THRESHOLD: f32 = 2.5;
 
 const ANIMATION_SPEED: f32 = 0.15;
-const ANIMATION_FRAMES: u8 = 4;
+const ANIMATION_FRAMES: u32 = 4;
+
+const SRC_SIZE: u32 = 64;
+const DST_SIZE: u32 = 192;
 
 #[derive(PartialEq)]
 enum PlayerSpriteState {
@@ -128,26 +141,13 @@ enum PlayerSpriteState {
     WalkAttack, // orc3_walk_attack
     Run,        // orc3_run
     RunAttack,  // orc3_run_attack
-    Hurt,       // orc3_hurt
-    Death,      // orc3_death
+    // TODO: Use states below.
+    Hurt,  // orc3_hurt
+    Death, // orc3_death
 }
-
-const LOOKUP: [(PlayerSpriteState, TextureID); 8] = [
-    (PlayerSpriteState::Idle, TextureID::Orc3Idle),
-    (PlayerSpriteState::IdleAttack, TextureID::Orc3Attack),
-    (PlayerSpriteState::Walk, TextureID::Orc3Walk),
-    (PlayerSpriteState::WalkAttack, TextureID::Orc3WalkAttack),
-    (PlayerSpriteState::Run, TextureID::Orc3Run),
-    (PlayerSpriteState::RunAttack, TextureID::Orc3RunAttack),
-    (PlayerSpriteState::Hurt, TextureID::Orc3Hurt),
-    (PlayerSpriteState::Death, TextureID::Orc3Death),
-];
 
 #[derive(Error, Debug)]
 pub enum PlayerSpriteError {
-    #[error("texture lookup error")]
-    TextureLookup(),
-
     #[error("texture get error")]
     TextureGet(),
 

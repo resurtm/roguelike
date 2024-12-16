@@ -19,7 +19,7 @@ pub struct MainLoop<'a> {
     player: Player,
     player_sprite: PlayerSprite,
     level: Level,
-    level_draw: LevelDisplay<'a>,
+    level_display: LevelDisplay<'a>,
 }
 
 impl<'b> MainLoop<'b> {
@@ -32,7 +32,7 @@ impl<'b> MainLoop<'b> {
         let player = Player::new();
         let player_sprite = PlayerSprite::new();
         let level = Level::new();
-        let level_draw = LevelDisplay::new();
+        let level_display = LevelDisplay::new();
 
         Ok(MainLoop {
             direct_media,
@@ -43,24 +43,23 @@ impl<'b> MainLoop<'b> {
             player,
             player_sprite,
             level,
-            level_draw,
+            level_display,
         })
     }
 
     pub fn run<'a: 'b>(&'a mut self) -> Result<(), MainLoopError> {
-        self.level_draw.sync(&self.level);
-        self.level_draw.load_textures(&self.textures)?;
+        self.level_display.sync_level(&self.level);
+        self.level_display.load_textures(&self.textures)?;
 
         while self.direct_media.handle_events(&mut self.input) {
-            // advance & sync
-            self.camera.sync(&self.input);
+            self.camera.sync_input(&self.input);
             self.camera.follow(&self.player);
-            self.player.advance(&self.input);
-            self.player_sprite.advance(&self.player);
 
-            // present & render
+            self.player.advance(&self.input);
+            self.player_sprite.sync(&self.player);
+
             self.direct_media.present_start();
-            self.level_draw.render(&self.camera, &mut self.direct_media.canvas)?;
+            self.level_display.render(&self.camera, &mut self.direct_media.canvas)?;
             self.player_sprite.render(
                 &self.camera,
                 &mut self.direct_media.canvas,

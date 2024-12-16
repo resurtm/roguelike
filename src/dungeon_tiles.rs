@@ -1,8 +1,5 @@
-use std::usize;
-
-use cgmath::Point2;
-
 use crate::types::LevelBlock as LB;
+use cgmath::Point2;
 
 #[derive(Clone, PartialEq)]
 pub(crate) enum DungeonTile {
@@ -35,6 +32,8 @@ pub(crate) enum DungeonTile {
 
     TopLeftCornerOuter,
     TopRightCornerOuter,
+
+    // TODO: Use these tiles below.
     WallTopOuter, // generic tile
     WallTopOuter0,
     WallTopOuter1,
@@ -71,7 +70,7 @@ pub(crate) enum DungeonTile {
 }
 
 impl DungeonTile {
-    pub(crate) fn get_pos(dt: &DungeonTile) -> Point2<i32> {
+    pub(crate) fn get_pos(dt: &DungeonTile) -> Point2<u32> {
         match dt {
             DungeonTile::TopLeftCorner => Point2::new(0, 0),
             DungeonTile::TopRightCorner => Point2::new(5, 0),
@@ -148,24 +147,24 @@ impl DungeonTile {
 
         (0..w).for_each(|x| {
             (0..h).for_each(|y| {
-                tiles[x][y] = Self::map_level_blocks_pass1(blocks, Point2::new(x, y));
+                tiles[x][y] = Self::map_pass0(blocks, Point2::new(x, y));
             });
         });
         (0..w).for_each(|x| {
             (0..h).for_each(|y| {
-                tiles[x][y] = Self::map_level_blocks_pass2(&tiles, Point2::new(x, y));
+                tiles[x][y] = Self::map_pass1(&tiles, Point2::new(x, y));
             });
         });
         (0..w).for_each(|x| {
             (0..h).for_each(|y| {
-                tiles[x][y] = Self::map_level_blocks_pass3(&tiles, Point2::new(x, y));
+                tiles[x][y] = Self::map_pass2(&tiles, Point2::new(x, y));
             });
         });
 
         tiles
     }
 
-    fn map_level_blocks_pass1(m: &[Vec<LB>], p: Point2<usize>) -> DungeonTile {
+    fn map_pass0(m: &[Vec<LB>], p: Point2<usize>) -> DungeonTile {
         let (x, t, b, l, r, tl, tr, bl, br) = Self::get_directions(m, p, &LB::Void);
         if x == LB::Free {
             return DungeonTile::Flat;
@@ -211,8 +210,8 @@ impl DungeonTile {
         DungeonTile::Void
     }
 
-    fn map_level_blocks_pass2(m: &[Vec<DungeonTile>], p: Point2<usize>) -> DungeonTile {
-        let (x, t, b, l, r, tl, tr, bl, br) = Self::get_directions(m, p, &DungeonTile::Void);
+    fn map_pass1(m: &[Vec<DungeonTile>], p: Point2<usize>) -> DungeonTile {
+        let (x, _, _, _, _, _, _, _, _) = Self::get_directions(m, p, &DungeonTile::Void);
         match x {
             DungeonTile::Flat => FLAT_TILE_LOOKUP[p.x % 4 + p.y % 3 * 3].clone(),
             DungeonTile::WallTop => WALL_TOP_TILE_LOOKUP[p.x % 4].clone(),
@@ -223,8 +222,8 @@ impl DungeonTile {
         }
     }
 
-    fn map_level_blocks_pass3(m: &[Vec<DungeonTile>], p: Point2<usize>) -> DungeonTile {
-        let (x, t, b, l, r, tl, tr, bl, br) = Self::get_directions(m, p, &DungeonTile::Void);
+    fn map_pass2(m: &[Vec<DungeonTile>], p: Point2<usize>) -> DungeonTile {
+        let (x, t, b, l, r, _, _, _, _) = Self::get_directions(m, p, &DungeonTile::Void);
         if Self::is_flat(&x) {
             // corners
             if !Self::is_flat(&t) && Self::is_flat(&b) && !Self::is_flat(&l) && Self::is_flat(&r) {

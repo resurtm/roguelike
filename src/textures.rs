@@ -1,8 +1,7 @@
+use crate::direct_media::DirectMedia;
 use sdl2::{image::LoadTexture, render::Texture};
 use std::{collections::HashMap, fmt};
 use thiserror::Error;
-
-use crate::direct_media::DirectMedia;
 
 pub(crate) struct Textures {
     map: HashMap<TextureID, Texture>,
@@ -45,7 +44,7 @@ const LOOKUP: [(TextureID, &str); 13] = [
 ];
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub(crate) enum TextureID {
+pub enum TextureID {
     Orc3Attack,
     Orc3Death,
     Orc3Hurt,

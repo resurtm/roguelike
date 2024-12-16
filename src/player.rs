@@ -27,7 +27,6 @@ impl Player {
     }
 
     pub(crate) fn advance(&mut self, input: &Input) {
-        // thrust
         if input.key_up {
             self.velocity.y -= self.velocity_delta
         }
@@ -45,7 +44,6 @@ impl Player {
         self.position += self.velocity;
         self.velocity *= self.velocity_slowdown;
 
-        // limit max capacity
         if self.velocity.x > self.velocity_max {
             self.velocity.x = self.velocity_max;
         }

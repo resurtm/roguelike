@@ -1,4 +1,5 @@
 mod camera;
+mod consts;
 mod direct_media;
 mod dungeon_tiles;
 mod input;
