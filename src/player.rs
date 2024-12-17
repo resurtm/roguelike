@@ -1,4 +1,4 @@
-use crate::input::Input;
+use crate::{collision::Aabb, input::Input};
 use cgmath::{Point2, Vector2};
 
 pub(crate) struct Player {
@@ -26,7 +26,7 @@ impl Player {
         }
     }
 
-    pub(crate) fn advance(&mut self, input: &Input) {
+    pub(crate) fn sync_input(&mut self, input: &Input) {
         if input.key_up {
             self.velocity.y -= self.velocity_delta
         }
@@ -56,5 +56,13 @@ impl Player {
         if self.velocity.y < -self.velocity_max {
             self.velocity.y = -self.velocity_max;
         }
+
+        // FIXME: Real-world test code, remove me later.
+        let a = Aabb::new(Point2::new(0.0, 0.0), Point2::new(96.0, 96.0));
+        let b = Aabb::new(
+            Point2::new(self.position.x - 96.0 / 2.0, self.position.y - 96.0 / 2.0),
+            Point2::new(self.position.x + 96.0 / 2.0, self.position.y + 96.0 / 2.0),
+        );
+        println!("{}", a.intersects(&b));
     }
 }

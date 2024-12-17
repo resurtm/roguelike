@@ -55,7 +55,7 @@ impl<'b> MainLoop<'b> {
             self.camera.sync_input(&self.input);
             self.camera.follow(&self.player);
 
-            self.player.advance(&self.input);
+            self.player.sync_input(&self.input);
             self.player_sprite.sync(&self.player);
 
             self.direct_media.present_start();
