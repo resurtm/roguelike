@@ -2,6 +2,15 @@
 
 Tiny hobby / free-time roguelike game pet-project. 🔮🧝🏻🪄
 
+```
+    ____                         __    _ __
+   / __ \____  ____ ___  _____  / /   (_) /_____
+  / /_/ / __ \/ __ `/ / / / _ \/ /   / / //_/ _ \
+ / _, _/ /_/ / /_/ / /_/ /  __/ /___/ / ,< /  __/
+/_/ |_|\____/\__, /\__,_/\___/_____/_/_/|_|\___/
+            /____/
+```
+
 ## Arch Linux (+ EndeavourOS) Dependencies
 
 - https://archlinux.org/packages/extra/x86_64/sdl2/
