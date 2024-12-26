@@ -83,8 +83,6 @@ mod tests {
         let actual = LevelCollision::find_wall_blocks(&map);
         let expected = vec![(0, 0, 1, 1), (1, 1, 4, 2), (1, 2, 3, 3), (1, 3, 2, 4)];
         assert_eq!(actual, expected);
-        print_grid_map(&map);
-        print_grid_boxes(&map, &actual);
     }
 
     #[test]
@@ -98,8 +96,6 @@ mod tests {
         let actual = LevelCollision::find_wall_blocks(&map);
         let expected = vec![(0, 1, 3, 2), (1, 0, 3, 1), (1, 2, 3, 4), (3, 3, 4, 4)];
         assert_eq!(actual, expected);
-        print_grid_map(&map);
-        print_grid_boxes(&map, &actual);
     }
 
     #[test]
@@ -113,35 +109,18 @@ mod tests {
         let actual = LevelCollision::find_wall_blocks(&map);
         let expected = vec![(0, 0, 4, 4)];
         assert_eq!(actual, expected);
-        print_grid_map(&map);
-        print_grid_boxes(&map, &actual);
     }
 
-    fn print_grid_map(map: &[Vec<LB>]) {
-        println!("----");
-        for x in 0..map.len() {
-            for y in 0..map[0].len() {
-                print!("{}", if map[x][y] == LB::Wall { '#' } else { '_' });
-            }
-            println!();
-        }
-    }
-
-    fn print_grid_boxes(map: &[Vec<LB>], boxes: &[(i32, i32, i32, i32)]) {
-        println!("----");
-        for x in 0..map.len() {
-            for y in 0..map[0].len() {
-                let mut found = false;
-                for dim in boxes.iter() {
-                    let u = x as i32;
-                    let v = y as i32;
-                    if (dim.0..dim.2).contains(&u) && (dim.1..dim.3).contains(&v) {
-                        found = true;
-                    }
-                }
-                print!("{}", if found { '#' } else { '_' });
-            }
-            println!();
-        }
+    #[test]
+    fn test_case4() {
+        let map = vec![
+            vec![LB::Wall, LB::Wall, LB::Wall, LB::Wall],
+            vec![LB::Wall, LB::Free, LB::Free, LB::Wall],
+            vec![LB::Wall, LB::Free, LB::Free, LB::Wall],
+            vec![LB::Wall, LB::Wall, LB::Wall, LB::Wall],
+        ];
+        let actual = LevelCollision::find_wall_blocks(&map);
+        let expected = vec![(0, 0, 4, 1), (0, 1, 1, 4), (1, 3, 4, 4), (3, 1, 4, 3)];
+        assert_eq!(actual, expected);
     }
 }
