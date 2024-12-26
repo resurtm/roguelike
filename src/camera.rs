@@ -6,7 +6,7 @@ use crate::{
 use cgmath::{InnerSpace, MetricSpace, Point2};
 
 pub(crate) struct Camera {
-    pub(crate) position: Point2<f32>,
+    pub(crate) position: Point2<f64>,
 }
 
 impl Camera {
@@ -37,6 +37,6 @@ impl Camera {
     }
 }
 
-const CAMERA_MANUAL_SPEED: f32 = 10.0;
-const CAMERA_FOLLOW_SPEED: f32 = 3.5;
-const CAMERA_FOLLOW_THRESHOLD: f32 = 350.0;
+const CAMERA_MANUAL_SPEED: f64 = 10.0;
+const CAMERA_FOLLOW_SPEED: f64 = 3.5;
+const CAMERA_FOLLOW_THRESHOLD: f64 = 350.0;

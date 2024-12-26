@@ -2,12 +2,12 @@ use crate::{aabb::Aabb, input::Input};
 use cgmath::{Point2, Vector2};
 
 pub(crate) struct Player {
-    pub(crate) position: Point2<f32>,
+    pub(crate) position: Point2<f64>,
 
-    pub(crate) velocity: Vector2<f32>,
-    velocity_delta: f32,
-    velocity_max: f32,
-    velocity_slowdown: f32,
+    pub(crate) velocity: Vector2<f64>,
+    velocity_delta: f64,
+    velocity_max: f64,
+    velocity_slowdown: f64,
 
     pub(crate) is_attack: bool,
 }
@@ -62,19 +62,19 @@ impl Player {
         let wall0 = Aabb::new(Point2::new(0.0, 0.0), Point2::new(96.0 * 10.0, 96.0));
         let wall1 = Aabb::new(Point2::new(0.0, 0.0), Point2::new(96.0, 96.0 * 10.0));
         let plb = Aabb::new(
-            Point2::new(self.position.x as f64 - 96.0 / 4.0, self.position.y as f64 - 96.0 / 4.0),
-            Point2::new(self.position.x as f64 + 96.0 / 4.0, self.position.y as f64 + 96.0 / 4.0),
+            Point2::new(self.position.x - 96.0 / 4.0, self.position.y - 96.0 / 4.0),
+            Point2::new(self.position.x + 96.0 / 4.0, self.position.y + 96.0 / 4.0),
         );
 
         let cont = wall0.check_contact(&plb);
         if cont.intersects {
             let offset = cont.min_trans * cont.penetration;
-            self.position -= Vector2::new(offset.x as f32, offset.y as f32);
+            self.position -= Vector2::new(offset.x, offset.y);
         }
         let cont = wall1.check_contact(&plb);
         if cont.intersects {
             let offset = cont.min_trans * cont.penetration;
-            self.position -= Vector2::new(offset.x as f32, offset.y as f32);
+            self.position -= Vector2::new(offset.x, offset.y);
         }
     }
 }

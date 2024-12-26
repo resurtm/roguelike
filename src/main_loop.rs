@@ -3,7 +3,7 @@ use crate::{
     direct_media::{DirectMedia, DirectMediaError},
     input::Input,
     level::Level,
-    level_collision::{LevelCollision},
+    level_collision::LevelCollision,
     level_display::{LevelDisplay, LevelDisplayError},
     player::Player,
     player_sprite::{PlayerSprite, PlayerSpriteError},

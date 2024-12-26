@@ -1,5 +1,5 @@
-pub(crate) const START_POSITION_X: f32 = 450.0;
-pub(crate) const START_POSITION_Y: f32 = 300.0;
+pub(crate) const START_POSITION_X: f64 = 450.0;
+pub(crate) const START_POSITION_Y: f64 = 300.0;
 
 pub(crate) const WINDOW_TITLE: &str = "roguelike 🔮🧝🏻🪄";
 pub(crate) const WINDOW_WIDTH: u32 = 1920;

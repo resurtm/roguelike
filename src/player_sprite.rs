@@ -10,10 +10,10 @@ use sdl2::{rect::Rect, render::Canvas, video::Window};
 use thiserror::Error;
 
 pub(crate) struct PlayerSprite {
-    location: Point2<f32>,
+    location: Point2<f64>,
     direction: Direction,
     state: PlayerSpriteState,
-    animation_frame: f32,
+    animation_frame: f64,
 }
 
 impl PlayerSprite {
@@ -58,7 +58,7 @@ impl PlayerSprite {
         self.state = Self::find_state(player);
 
         self.animation_frame += ANIMATION_SPEED;
-        if self.animation_frame >= ANIMATION_FRAMES as f32 {
+        if self.animation_frame >= ANIMATION_FRAMES as f64 {
             self.animation_frame = 0.0;
         }
     }
@@ -124,10 +124,10 @@ impl PlayerSprite {
     }
 }
 
-const WALK_SPEED_THRESHOLD: f32 = 0.5;
-const RUN_SPEED_THRESHOLD: f32 = 2.5;
+const WALK_SPEED_THRESHOLD: f64 = 0.5;
+const RUN_SPEED_THRESHOLD: f64 = 2.5;
 
-const ANIMATION_SPEED: f32 = 0.15;
+const ANIMATION_SPEED: f64 = 0.15;
 const ANIMATION_FRAMES: u32 = 4;
 
 const SRC_SIZE: u32 = 64;
