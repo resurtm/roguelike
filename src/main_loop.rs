@@ -3,6 +3,7 @@ use crate::{
     direct_media::{DirectMedia, DirectMediaError},
     input::Input,
     level::Level,
+    level_collision::{LevelCollision},
     level_display::{LevelDisplay, LevelDisplayError},
     player::Player,
     player_sprite::{PlayerSprite, PlayerSpriteError},
@@ -18,7 +19,9 @@ pub struct MainLoop<'a> {
 
     player: Player,
     player_sprite: PlayerSprite,
+
     level: Level,
+    level_collision: LevelCollision,
     level_display: LevelDisplay<'a>,
 }
 
@@ -31,7 +34,9 @@ impl<'b> MainLoop<'b> {
 
         let player = Player::new();
         let player_sprite = PlayerSprite::new();
+
         let level = Level::new();
+        let level_collision = LevelCollision::new(&level.map);
         let level_display = LevelDisplay::new();
 
         Ok(MainLoop {
@@ -42,7 +47,9 @@ impl<'b> MainLoop<'b> {
 
             player,
             player_sprite,
+
             level,
+            level_collision,
             level_display,
         })
     }

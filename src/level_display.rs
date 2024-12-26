@@ -1,6 +1,6 @@
 use crate::{
     camera::Camera,
-    consts::{WINDOW_HEIGHT, WINDOW_WIDTH},
+    consts::{TILE_SIZE, TILE_TEX_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH},
     dungeon_tiles::DungeonTile,
     level::Level,
     textures::{TextureID, Textures},
@@ -50,16 +50,17 @@ impl<'b> LevelDisplay<'b> {
             for y in 0..self.tiles[x].len() {
                 let pos = DungeonTile::get_pos(&self.tiles[x][y]);
                 let src = Rect::new(
-                    (pos.x * SRC_SIZE) as i32,
-                    (pos.y * SRC_SIZE) as i32,
-                    SRC_SIZE,
-                    SRC_SIZE,
+                    (pos.x * TILE_TEX_SIZE) as i32,
+                    (pos.y * TILE_TEX_SIZE) as i32,
+                    TILE_TEX_SIZE,
+                    TILE_TEX_SIZE,
                 );
                 let dst = Rect::new(
-                    (WINDOW_WIDTH / 2) as i32 - cam.position.x as i32 + x as i32 * DST_SIZE as i32,
-                    (WINDOW_HEIGHT / 2) as i32 - cam.position.y as i32 + y as i32 * DST_SIZE as i32,
-                    DST_SIZE,
-                    DST_SIZE,
+                    (WINDOW_WIDTH / 2) as i32 - cam.position.x as i32 + x as i32 * TILE_SIZE as i32,
+                    (WINDOW_HEIGHT / 2) as i32 - cam.position.y as i32
+                        + y as i32 * TILE_SIZE as i32,
+                    TILE_SIZE,
+                    TILE_SIZE,
                 );
                 can.copy(tex, src, dst).map_err(LevelDisplayError::CanvasCopy)?;
             }
@@ -67,9 +68,6 @@ impl<'b> LevelDisplay<'b> {
         Ok(())
     }
 }
-
-const SRC_SIZE: u32 = 16;
-const DST_SIZE: u32 = 96;
 
 #[derive(Error, Debug)]
 pub enum LevelDisplayError {

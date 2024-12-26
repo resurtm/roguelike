@@ -1,9 +1,29 @@
-use crate::types::LevelBlock as LB;
+use crate::{aabb::Aabb, consts::TILE_SIZE, types::LevelBlock as LB};
+use cgmath::Point2;
 use std::collections::HashSet;
 
-struct LevelCollision {}
+pub(crate) struct LevelCollision {
+    aabbs: Vec<Aabb>,
+}
 
 impl LevelCollision {
+    pub(crate) fn new(m: &[Vec<LB>]) -> LevelCollision {
+        let aabbs = Self::convert_wall_blocks_to_aabbs(&Self::find_wall_blocks(m));
+        LevelCollision { aabbs }
+    }
+
+    fn convert_wall_blocks_to_aabbs(wall_blocks: &[(i32, i32, i32, i32)]) -> Vec<Aabb> {
+        wall_blocks
+            .iter()
+            .map(|(x0, y0, x1, y1)| {
+                Aabb::new(
+                    Point2::new(*x0 as f64 * TILE_SIZE as f64, *y0 as f64 * TILE_SIZE as f64),
+                    Point2::new(*x1 as f64 * TILE_SIZE as f64, *y1 as f64 * TILE_SIZE as f64),
+                )
+            })
+            .collect()
+    }
+
     fn find_wall_blocks(m: &[Vec<LB>]) -> Vec<(i32, i32, i32, i32)> {
         let w = m.len() as i32;
         let h = m[0].len() as i32;
