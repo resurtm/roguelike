@@ -63,10 +63,16 @@ impl<'b> MainLoop<'b> {
             self.camera.follow(&self.player);
 
             self.player.sync_input(&self.input);
+            self.player.sync_collision(&self.level_collision);
             self.player_sprite.sync(&self.player);
 
             self.direct_media.present_start();
             self.level_display.render(&self.camera, &mut self.direct_media.canvas)?;
+            self.level_display.render_collision(
+                &self.camera,
+                &mut self.direct_media.canvas,
+                &self.level_collision,
+            )?;
             self.player_sprite.render(
                 &self.camera,
                 &mut self.direct_media.canvas,

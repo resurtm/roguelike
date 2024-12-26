@@ -3,9 +3,11 @@ use crate::{
     consts::{TILE_SIZE, TILE_TEX_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH},
     dungeon_tiles::DungeonTile,
     level::Level,
+    level_collision::LevelCollision,
     textures::{TextureID, Textures},
 };
 use sdl2::{
+    pixels::Color,
     rect::Rect,
     render::{Canvas, Texture},
     video::Window,
@@ -64,6 +66,25 @@ impl<'b> LevelDisplay<'b> {
                 );
                 can.copy(tex, src, dst).map_err(LevelDisplayError::CanvasCopy)?;
             }
+        }
+        Ok(())
+    }
+
+    pub(crate) fn render_collision(
+        &self,
+        cam: &Camera,
+        can: &mut Canvas<Window>,
+        col: &LevelCollision,
+    ) -> Result<(), LevelDisplayError> {
+        can.set_draw_color(Color::RGB(255, 0, 0));
+        for aabb in col.aabbs.iter() {
+            can.draw_rect(Rect::new(
+                (WINDOW_WIDTH / 2) as i32 - cam.position.x as i32 + aabb.min.x as i32,
+                (WINDOW_HEIGHT / 2) as i32 - cam.position.y as i32 + aabb.min.y as i32,
+                (aabb.max.x - aabb.min.x) as u32,
+                (aabb.max.y - aabb.min.y) as u32,
+            ))
+            .map_err(LevelDisplayError::CanvasCopy)?;
         }
         Ok(())
     }

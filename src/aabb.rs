@@ -1,8 +1,8 @@
 use cgmath::{AbsDiffEq, InnerSpace, Point2, RelativeEq, Vector2};
 
 pub(crate) struct Aabb {
-    min: Point2<f64>,
-    max: Point2<f64>,
+    pub(crate) min: Point2<f64>,
+    pub(crate) max: Point2<f64>,
 }
 
 impl Aabb {

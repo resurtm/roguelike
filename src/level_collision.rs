@@ -3,7 +3,7 @@ use cgmath::Point2;
 use std::collections::HashSet;
 
 pub(crate) struct LevelCollision {
-    aabbs: Vec<Aabb>,
+    pub(crate) aabbs: Vec<Aabb>,
 }
 
 impl LevelCollision {
