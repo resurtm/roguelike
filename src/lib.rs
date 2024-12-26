@@ -1,5 +1,5 @@
+mod aabb;
 mod camera;
-mod collision;
 mod consts;
 mod direct_media;
 mod dungeon_tiles;

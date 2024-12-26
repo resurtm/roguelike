@@ -1,4 +1,4 @@
-use crate::{collision::Aabb, input::Input};
+use crate::{aabb::Aabb, input::Input};
 use cgmath::{Point2, Vector2};
 
 pub(crate) struct Player {
@@ -57,12 +57,24 @@ impl Player {
             self.velocity.y = -self.velocity_max;
         }
 
-        // FIXME: Real-world test code, remove me later.
-        let a = Aabb::new(Point2::new(0.0, 0.0), Point2::new(96.0, 96.0));
-        let b = Aabb::new(
-            Point2::new(self.position.x - 96.0 / 2.0, self.position.y - 96.0 / 2.0),
-            Point2::new(self.position.x + 96.0 / 2.0, self.position.y + 96.0 / 2.0),
+        // FIXME: Two testing fictional walls, later implement
+        // BFS to detect real walls and use them as AABBs.
+        let wall0 = Aabb::new(Point2::new(0.0, 0.0), Point2::new(96.0 * 10.0, 96.0));
+        let wall1 = Aabb::new(Point2::new(0.0, 0.0), Point2::new(96.0, 96.0 * 10.0));
+        let plb = Aabb::new(
+            Point2::new(self.position.x as f64 - 96.0 / 4.0, self.position.y as f64 - 96.0 / 4.0),
+            Point2::new(self.position.x as f64 + 96.0 / 4.0, self.position.y as f64 + 96.0 / 4.0),
         );
-        println!("{}", a.intersects(&b));
+
+        let cont = wall0.check_contact(&plb);
+        if cont.intersects {
+            let offset = cont.min_trans * cont.penetration;
+            self.position -= Vector2::new(offset.x as f32, offset.y as f32);
+        }
+        let cont = wall1.check_contact(&plb);
+        if cont.intersects {
+            let offset = cont.min_trans * cont.penetration;
+            self.position -= Vector2::new(offset.x as f32, offset.y as f32);
+        }
     }
 }
