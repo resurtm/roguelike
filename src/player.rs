@@ -26,7 +26,7 @@ impl Player {
         }
     }
 
-    pub(crate) fn sync_input(&mut self, input: &Input) {
+    pub(crate) fn apply_input(&mut self, input: &Input) {
         if input.key_up {
             self.velocity.y -= self.velocity_delta
         }
@@ -58,7 +58,7 @@ impl Player {
         }
     }
 
-    pub(crate) fn sync_collision(&mut self, col: &LevelCollision) {
+    pub(crate) fn sync_level_collision(&mut self, col: &LevelCollision) {
         let p = Aabb::new(
             Point2::new(self.position.x - 96.0 / 4.0, self.position.y - 96.0 / 4.0),
             Point2::new(self.position.x + 96.0 / 4.0, self.position.y + 96.0 / 4.0),

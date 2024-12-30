@@ -6,7 +6,7 @@ use crate::{
     level_collision::LevelCollision,
     level_display::{LevelDisplay, LevelDisplayError},
     player::Player,
-    player_sprite::{PlayerSprite, PlayerSpriteError},
+    player_sprite::{PlayerDisplay, PlayerSpriteError},
     textures::{Textures, TexturesError},
 };
 use thiserror::Error;
@@ -18,7 +18,7 @@ pub struct MainLoop<'a> {
     camera: Camera,
 
     player: Player,
-    player_sprite: PlayerSprite,
+    player_display: PlayerDisplay,
 
     level: Level,
     level_collision: LevelCollision,
@@ -33,11 +33,11 @@ impl<'b> MainLoop<'b> {
         let camera = Camera::new();
 
         let player = Player::new();
-        let player_sprite = PlayerSprite::new();
+        let player_display = PlayerDisplay::new();
 
         let level = Level::new();
-        let level_collision = LevelCollision::new(&level.map);
         let level_display = LevelDisplay::new();
+        let level_collision = LevelCollision::new(&level.map);
 
         Ok(MainLoop {
             direct_media,
@@ -46,7 +46,7 @@ impl<'b> MainLoop<'b> {
             camera,
 
             player,
-            player_sprite,
+            player_display,
 
             level,
             level_collision,
@@ -55,25 +55,24 @@ impl<'b> MainLoop<'b> {
     }
 
     pub fn run<'a: 'b>(&'a mut self) -> Result<(), MainLoopError> {
-        self.level_display.sync_level(&self.level);
-        self.level_display.load_textures(&self.textures)?;
+        self.level_display.prepare(&self.level, &self.textures)?;
 
         while self.direct_media.handle_events(&mut self.input) {
-            self.camera.sync_input(&self.input);
-            self.camera.follow(&self.player);
+            self.camera.apply_input(&self.input);
+            self.camera.follow_player(&self.player);
 
-            self.player.sync_input(&self.input);
-            self.player.sync_collision(&self.level_collision);
-            self.player_sprite.sync(&self.player);
+            self.player.apply_input(&self.input);
+            self.player.sync_level_collision(&self.level_collision);
+            self.player_display.sync(&self.player);
 
             self.direct_media.present_start();
-            self.level_display.render(&self.camera, &mut self.direct_media.canvas)?;
-            self.level_display.render_collision(
+            self.level_display.render_tiles(&self.camera, &mut self.direct_media.canvas)?;
+            self.level_display.render_collision_debug(
                 &self.camera,
                 &mut self.direct_media.canvas,
                 &self.level_collision,
             )?;
-            self.player_sprite.render(
+            self.player_display.render_player(
                 &self.camera,
                 &mut self.direct_media.canvas,
                 &self.textures,

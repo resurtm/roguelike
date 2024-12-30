@@ -16,22 +16,20 @@ use thiserror::Error;
 pub(crate) struct DirectMedia {
     event_pump: EventPump,
     pub(crate) canvas: Canvas<Window>,
-    pub(crate) texture_creator: TextureCreator<WindowContext>,
+    pub(crate) tex_creator: TextureCreator<WindowContext>,
     is_alive: bool,
 }
 
 impl DirectMedia {
     pub(crate) fn new() -> Result<DirectMedia, DirectMediaError> {
-        let sdl_context = sdl2::init().map_err(DirectMediaError::Context)?;
-        let event_pump = sdl_context.event_pump().map_err(DirectMediaError::EventPump)?;
-        let video_subsystem = sdl_context.video().map_err(DirectMediaError::Video)?;
-        let window = video_subsystem
-            .window(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT)
-            .position_centered()
-            .build()?;
+        let context = sdl2::init().map_err(DirectMediaError::Context)?;
+        let event_pump = context.event_pump().map_err(DirectMediaError::EventPump)?;
+        let video = context.video().map_err(DirectMediaError::Video)?;
+        let window =
+            video.window(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT).position_centered().build()?;
         let canvas = window.into_canvas().build().map_err(DirectMediaError::Canvas)?;
-        let texture_creator = canvas.texture_creator();
-        Ok(DirectMedia { event_pump, canvas, texture_creator, is_alive: true })
+        let tex_creator = canvas.texture_creator();
+        Ok(DirectMedia { event_pump, canvas, tex_creator, is_alive: true })
     }
 
     pub(crate) fn handle_events(&mut self, input: &mut Input) -> bool {
@@ -54,12 +52,12 @@ impl DirectMedia {
 
     pub(crate) fn present_end(&mut self) {
         self.canvas.present();
-        sleep(Duration::new(0, FRAME_DELAY));
+        sleep(Duration::new(0, FRAME_DELAY_NSECS));
     }
 }
 
 const BG_COLOR: (u8, u8, u8) = (37, 19, 26);
-const FRAME_DELAY: u32 = 1_000_000_000 / 60; // 1_000 msecs / 60
+const FRAME_DELAY_NSECS: u32 = 1_000_000_000 / 60; // 1_000 msecs / 60
 
 #[derive(Error, Debug)]
 pub enum DirectMediaError {

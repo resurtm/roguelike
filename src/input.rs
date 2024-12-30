@@ -34,22 +34,27 @@ impl Input {
     pub(crate) fn handle_key_event(&mut self, event: &Event) {
         match event {
             Event::KeyDown { keycode: Some(k), .. } => match *k {
+                // arrow keys
                 Keycode::UP => self.key_up = true,
                 Keycode::DOWN => self.key_down = true,
                 Keycode::LEFT => self.key_left = true,
                 Keycode::RIGHT => self.key_right = true,
+                // wsad keys
                 Keycode::W => self.key_w = true,
                 Keycode::S => self.key_s = true,
                 Keycode::A => self.key_a = true,
                 Keycode::D => self.key_d = true,
+                // etc
                 Keycode::SPACE => self.key_space = true,
                 _ => {}
             },
             Event::KeyUp { keycode: Some(k), .. } => match *k {
+                // arrow keys
                 Keycode::UP => self.key_up = false,
                 Keycode::DOWN => self.key_down = false,
                 Keycode::LEFT => self.key_left = false,
                 Keycode::RIGHT => self.key_right = false,
+                // wsad keys
                 Keycode::W => self.key_w = false,
                 Keycode::S => self.key_s = false,
                 Keycode::A => self.key_a = false,

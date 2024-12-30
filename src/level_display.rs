@@ -20,19 +20,17 @@ pub(crate) struct LevelDisplay<'a> {
     tex_dungeon: Option<&'a Texture>,
 }
 
-impl<'b> LevelDisplay<'b> {
-    pub(crate) fn new<'a>() -> LevelDisplay<'a> {
+impl<'a> LevelDisplay<'a> {
+    pub(crate) fn new<'b>() -> LevelDisplay<'b> {
         LevelDisplay { tiles: Vec::new(), tex_dungeon: None }
     }
 
-    pub(crate) fn sync_level(&mut self, level: &Level) {
-        self.tiles = DungeonTile::map_level_blocks(&level.map);
-    }
-
-    pub(crate) fn load_textures<'a: 'b>(
+    pub(crate) fn prepare(
         &mut self,
+        level: &Level,
         textures: &'a Textures,
     ) -> Result<(), LevelDisplayError> {
+        self.tiles = DungeonTile::map_level_blocks_to_tiles(&level.map);
         self.tex_dungeon = Some(
             textures
                 .get(&TextureID::DungeonTileset)
@@ -41,7 +39,7 @@ impl<'b> LevelDisplay<'b> {
         Ok(())
     }
 
-    pub(crate) fn render(
+    pub(crate) fn render_tiles(
         &self,
         cam: &Camera,
         can: &mut Canvas<Window>,
@@ -50,7 +48,7 @@ impl<'b> LevelDisplay<'b> {
             self.tex_dungeon.ok_or(LevelDisplayError::TextureGet(TextureID::DungeonTileset))?;
         for x in 0..self.tiles.len() {
             for y in 0..self.tiles[x].len() {
-                let pos = DungeonTile::get_pos(&self.tiles[x][y]);
+                let pos = DungeonTile::get_tex_pos(&self.tiles[x][y]);
                 let src = Rect::new(
                     (pos.x * TILE_TEX_SIZE) as i32,
                     (pos.y * TILE_TEX_SIZE) as i32,
@@ -70,7 +68,7 @@ impl<'b> LevelDisplay<'b> {
         Ok(())
     }
 
-    pub(crate) fn render_collision(
+    pub(crate) fn render_collision_debug(
         &self,
         cam: &Camera,
         can: &mut Canvas<Window>,

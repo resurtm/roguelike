@@ -9,16 +9,16 @@ use cgmath::{EuclideanSpace, InnerSpace, Point2};
 use sdl2::{rect::Rect, render::Canvas, video::Window};
 use thiserror::Error;
 
-pub(crate) struct PlayerSprite {
+pub(crate) struct PlayerDisplay {
     location: Point2<f64>,
     direction: Direction,
     state: PlayerSpriteState,
     animation_frame: f64,
 }
 
-impl PlayerSprite {
-    pub(crate) fn new() -> PlayerSprite {
-        PlayerSprite {
+impl PlayerDisplay {
+    pub(crate) fn new() -> PlayerDisplay {
+        PlayerDisplay {
             location: Point2::origin(),
             direction: Direction::Down,
             state: PlayerSpriteState::Idle,
@@ -26,7 +26,7 @@ impl PlayerSprite {
         }
     }
 
-    pub(crate) fn render(
+    pub(crate) fn render_player(
         &self,
         cam: &Camera,
         can: &mut Canvas<Window>,

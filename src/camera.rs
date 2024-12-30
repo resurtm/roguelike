@@ -14,7 +14,7 @@ impl Camera {
         Camera { position: Point2::new(START_POSITION_X, START_POSITION_Y) }
     }
 
-    pub(crate) fn sync_input(&mut self, input: &Input) {
+    pub(crate) fn apply_input(&mut self, input: &Input) {
         if input.key_w {
             self.position.y -= CAMERA_MANUAL_SPEED;
         }
@@ -29,7 +29,7 @@ impl Camera {
         }
     }
 
-    pub(crate) fn follow(&mut self, player: &Player) {
+    pub(crate) fn follow_player(&mut self, player: &Player) {
         if self.position.distance(player.position) > CAMERA_FOLLOW_THRESHOLD {
             let dir = (player.position - self.position).normalize();
             self.position += dir * CAMERA_FOLLOW_SPEED;
@@ -39,4 +39,4 @@ impl Camera {
 
 const CAMERA_MANUAL_SPEED: f64 = 10.0;
 const CAMERA_FOLLOW_SPEED: f64 = 3.5;
-const CAMERA_FOLLOW_THRESHOLD: f64 = 350.0;
+const CAMERA_FOLLOW_THRESHOLD: f64 = 325.0;

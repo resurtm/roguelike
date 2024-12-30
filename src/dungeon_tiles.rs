@@ -33,9 +33,12 @@ pub(crate) enum DungeonTile {
     TopLeftCornerOuter,
     TopRightCornerOuter,
 
-    // TODO: Use these tiles below.
+    // TODO: Use these tiles below and remove #[allow(dead_code)].
+    #[allow(dead_code)]
     WallTopOuter, // generic tile
+    #[allow(dead_code)]
     WallTopOuter0,
+    #[allow(dead_code)]
     WallTopOuter1,
 
     Flat, // generic tile
@@ -70,7 +73,7 @@ pub(crate) enum DungeonTile {
 }
 
 impl DungeonTile {
-    pub(crate) fn get_pos(dt: &DungeonTile) -> Point2<u32> {
+    pub(crate) fn get_tex_pos(dt: &DungeonTile) -> Point2<u32> {
         match dt {
             DungeonTile::TopLeftCorner => Point2::new(0, 0),
             DungeonTile::TopRightCorner => Point2::new(5, 0),
@@ -137,7 +140,7 @@ impl DungeonTile {
         }
     }
 
-    pub(crate) fn map_level_blocks(blocks: &[Vec<LB>]) -> Vec<Vec<DungeonTile>> {
+    pub(crate) fn map_level_blocks_to_tiles(blocks: &[Vec<LB>]) -> Vec<Vec<DungeonTile>> {
         let w = blocks.len();
         let h = blocks[0].len();
 
@@ -147,25 +150,25 @@ impl DungeonTile {
 
         (0..w).for_each(|x| {
             (0..h).for_each(|y| {
-                tiles[x][y] = Self::map_pass0(blocks, Point2::new(x, y));
+                tiles[x][y] = Self::pass0(blocks, Point2::new(x, y));
             });
         });
         (0..w).for_each(|x| {
             (0..h).for_each(|y| {
-                tiles[x][y] = Self::map_pass1(&tiles, Point2::new(x, y));
+                tiles[x][y] = Self::pass1(&tiles, Point2::new(x, y));
             });
         });
         (0..w).for_each(|x| {
             (0..h).for_each(|y| {
-                tiles[x][y] = Self::map_pass2(&tiles, Point2::new(x, y));
+                tiles[x][y] = Self::pass2(&tiles, Point2::new(x, y));
             });
         });
 
         tiles
     }
 
-    fn map_pass0(m: &[Vec<LB>], p: Point2<usize>) -> DungeonTile {
-        let (x, t, b, l, r, tl, tr, bl, br) = Self::get_directions(m, p, &LB::Void);
+    fn pass0(m: &[Vec<LB>], p: Point2<usize>) -> DungeonTile {
+        let (x, t, b, l, r, tl, tr, bl, br) = Self::dirs(m, p, &LB::Void);
         if x == LB::Free {
             return DungeonTile::Flat;
         }
@@ -210,8 +213,8 @@ impl DungeonTile {
         DungeonTile::Void
     }
 
-    fn map_pass1(m: &[Vec<DungeonTile>], p: Point2<usize>) -> DungeonTile {
-        let (x, _, _, _, _, _, _, _, _) = Self::get_directions(m, p, &DungeonTile::Void);
+    fn pass1(m: &[Vec<DungeonTile>], p: Point2<usize>) -> DungeonTile {
+        let (x, _, _, _, _, _, _, _, _) = Self::dirs(m, p, &DungeonTile::Void);
         match x {
             DungeonTile::Flat => FLAT_TILE_LOOKUP[p.x % 4 + p.y % 3 * 3].clone(),
             DungeonTile::WallTop => WALL_TOP_TILE_LOOKUP[p.x % 4].clone(),
@@ -222,54 +225,54 @@ impl DungeonTile {
         }
     }
 
-    fn map_pass2(m: &[Vec<DungeonTile>], p: Point2<usize>) -> DungeonTile {
-        let (x, t, b, l, r, _, _, _, _) = Self::get_directions(m, p, &DungeonTile::Void);
-        if Self::is_flat(&x) {
+    fn pass2(m: &[Vec<DungeonTile>], p: Point2<usize>) -> DungeonTile {
+        let (x, t, b, l, r, _, _, _, _) = Self::dirs(m, p, &DungeonTile::Void);
+        if Self::flat(&x) {
             // corners
-            if !Self::is_flat(&t) && Self::is_flat(&b) && !Self::is_flat(&l) && Self::is_flat(&r) {
+            if !Self::flat(&t) && Self::flat(&b) && !Self::flat(&l) && Self::flat(&r) {
                 return DungeonTile::Flat0Wall;
             }
-            if !Self::is_flat(&t) && Self::is_flat(&b) && Self::is_flat(&l) && !Self::is_flat(&r) {
+            if !Self::flat(&t) && Self::flat(&b) && Self::flat(&l) && !Self::flat(&r) {
                 return DungeonTile::Flat3Wall;
             }
-            if Self::is_flat(&t) && !Self::is_flat(&b) && !Self::is_flat(&l) && Self::is_flat(&r) {
+            if Self::flat(&t) && !Self::flat(&b) && !Self::flat(&l) && Self::flat(&r) {
                 return DungeonTile::Flat8Wall;
             }
-            if Self::is_flat(&t) && !Self::is_flat(&b) && Self::is_flat(&l) && !Self::is_flat(&r) {
+            if Self::flat(&t) && !Self::flat(&b) && Self::flat(&l) && !Self::flat(&r) {
                 return DungeonTile::Flat11Wall;
             }
+
             // walls
-            if Self::is_flat(&t) && Self::is_flat(&b) && !Self::is_flat(&l) && Self::is_flat(&r) {
+            if Self::flat(&t) && Self::flat(&b) && !Self::flat(&l) && Self::flat(&r) {
                 return DungeonTile::Flat4Wall;
             }
-            if Self::is_flat(&t) && Self::is_flat(&b) && Self::is_flat(&l) && !Self::is_flat(&r) {
+            if Self::flat(&t) && Self::flat(&b) && Self::flat(&l) && !Self::flat(&r) {
                 return DungeonTile::Flat7Wall;
             }
-            if Self::is_flat(&t) && !Self::is_flat(&b) && Self::is_flat(&l) && Self::is_flat(&r) {
+            if Self::flat(&t) && !Self::flat(&b) && Self::flat(&l) && Self::flat(&r) {
                 return DungeonTile::Flat9Wall;
             }
-            if !Self::is_flat(&t) && Self::is_flat(&l) && Self::is_flat(&r) {
+            if !Self::flat(&t) && Self::flat(&l) && Self::flat(&r) {
                 return DungeonTile::Flat1Wall;
             }
         }
         x
     }
 
-    fn get_directions<T: Clone>(
-        m: &[Vec<T>],
-        p: Point2<usize>,
-        d: &T,
-    ) -> (T, T, T, T, T, T, T, T, T) {
+    fn dirs<T: Clone>(m: &[Vec<T>], p: Point2<usize>, d: &T) -> (T, T, T, T, T, T, T, T, T) {
         let (w, h) = (m.len() - 1, m[0].len() - 1);
         let x = &m[p.x][p.y];
+
         let t = if p.y == 0 { d } else { &m[p.x][p.y - 1] };
         let b = if p.y == h { d } else { &m[p.x][p.y + 1] };
         let l = if p.x == 0 { d } else { &m[p.x - 1][p.y] };
         let r = if p.x == w { d } else { &m[p.x + 1][p.y] };
+
         let tl = if p.x == 0 || p.y == 0 { d } else { &m[p.x - 1][p.y - 1] };
         let tr = if p.x == w || p.y == 0 { d } else { &m[p.x + 1][p.y - 1] };
         let bl = if p.x == 0 || p.y == h { d } else { &m[p.x - 1][p.y + 1] };
         let br = if p.x == w || p.y == h { d } else { &m[p.x + 1][p.y + 1] };
+
         (
             x.clone(),
             t.clone(),
@@ -283,50 +286,64 @@ impl DungeonTile {
         )
     }
 
-    fn is_flat(t: &DungeonTile) -> bool {
+    fn flat(t: &DungeonTile) -> bool {
         FLAT_TILE_LOOKUP.contains(t) || FLAT_WALL_TILE_LOOKUP.contains(t)
     }
 }
 
 const FLAT_TILE_LOOKUP: [DungeonTile; 12] = [
-    DungeonTile::Flat0,  // 0x0
-    DungeonTile::Flat1,  // 1x0
-    DungeonTile::Flat2,  // 2x0
-    DungeonTile::Flat3,  // 3x0
-    DungeonTile::Flat4,  // 0x1
-    DungeonTile::Flat5,  // 1x1
-    DungeonTile::Flat6,  // 2x1
-    DungeonTile::Flat7,  // 3x1
+    // row 0
+    DungeonTile::Flat0, // 0x0
+    DungeonTile::Flat1, // 1x0
+    DungeonTile::Flat2, // 2x0
+    DungeonTile::Flat3, // 3x0
+    // row 1
+    DungeonTile::Flat4, // 0x1
+    DungeonTile::Flat5, // 1x1
+    DungeonTile::Flat6, // 2x1
+    DungeonTile::Flat7, // 3x1
+    // row 2
     DungeonTile::Flat8,  // 0x2
     DungeonTile::Flat9,  // 1x2
     DungeonTile::Flat10, // 2x2
     DungeonTile::Flat11, // 3x2
 ];
-
 const FLAT_WALL_TILE_LOOKUP: [DungeonTile; 12] = [
-    DungeonTile::Flat0Wall,  // 0x0
-    DungeonTile::Flat1Wall,  // 1x0
-    DungeonTile::Flat2Wall,  // 2x0
-    DungeonTile::Flat3Wall,  // 3x0
-    DungeonTile::Flat4Wall,  // 0x1
-    DungeonTile::Flat5,      // 1x1
-    DungeonTile::Flat6,      // 2x1
-    DungeonTile::Flat7Wall,  // 3x1
+    // row 0
+    DungeonTile::Flat0Wall, // 0x0
+    DungeonTile::Flat1Wall, // 1x0
+    DungeonTile::Flat2Wall, // 2x0
+    DungeonTile::Flat3Wall, // 3x0
+    // row 1
+    DungeonTile::Flat4Wall, // 0x1
+    DungeonTile::Flat5,     // 1x1
+    DungeonTile::Flat6,     // 2x1
+    DungeonTile::Flat7Wall, // 3x1
+    // row 2
     DungeonTile::Flat8Wall,  // 0x2
     DungeonTile::Flat9Wall,  // 1x2
     DungeonTile::Flat10Wall, // 2x2
     DungeonTile::Flat11Wall, // 3x2
 ];
-
-const WALL_TOP_TILE_LOOKUP: [DungeonTile; 4] =
-    [DungeonTile::WallTop0, DungeonTile::WallTop1, DungeonTile::WallTop2, DungeonTile::WallTop3];
-const WALL_BOTTOM_TILE_LOOKUP: [DungeonTile; 4] = [
-    DungeonTile::WallBottom0,
-    DungeonTile::WallBottom1,
-    DungeonTile::WallBottom2,
-    DungeonTile::WallBottom3,
+const WALL_TOP_TILE_LOOKUP: [DungeonTile; 4] = [
+    DungeonTile::WallTop0, // 1x0
+    DungeonTile::WallTop1, // 2x0
+    DungeonTile::WallTop2, // 3x0
+    DungeonTile::WallTop3, // 4x0
 ];
-const WALL_LEFT_TILE_LOOKUP: [DungeonTile; 3] =
-    [DungeonTile::WallLeft0, DungeonTile::WallLeft1, DungeonTile::WallLeft2];
-const WALL_RIGHT_TILE_LOOKUP: [DungeonTile; 3] =
-    [DungeonTile::WallRight0, DungeonTile::WallRight1, DungeonTile::WallRight2];
+const WALL_BOTTOM_TILE_LOOKUP: [DungeonTile; 4] = [
+    DungeonTile::WallBottom0, // 1x4
+    DungeonTile::WallBottom1, // 2x4
+    DungeonTile::WallBottom2, // 3x4
+    DungeonTile::WallBottom3, // 4x4
+];
+const WALL_LEFT_TILE_LOOKUP: [DungeonTile; 3] = [
+    DungeonTile::WallLeft0, // 0x1
+    DungeonTile::WallLeft1, // 0x2
+    DungeonTile::WallLeft2, // 0x3
+];
+const WALL_RIGHT_TILE_LOOKUP: [DungeonTile; 3] = [
+    DungeonTile::WallRight0, // 5x1
+    DungeonTile::WallRight1, // 5x2
+    DungeonTile::WallRight2, // 5x3
+];
