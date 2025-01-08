@@ -1,5 +1,9 @@
 # `roguelike`
 
+[![Build Status][ci-shield]][ci-url]
+[![Rust][rust-shield]][rust-url]
+[![MIT License][license-shield]][license-url]
+
 Tiny hobby / free-time roguelike game pet-project. 🔮🧝🏻🪄
 
 ```
@@ -53,3 +57,10 @@ Source: [click here](https://pixel-poem.itch.io/dungeon-assetpuck).
 ## License (except assets)
 
 [MIT](./LICENSE.md)
+
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/resurtm/roguelike/ci.yml?style=for-the-badge
+[ci-url]: https://github.com/resurtm/roguelike/actions/workflows/ci.yml
+[rust-shield]: https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white
+[rust-url]: https://www.rust-lang.org/
+[license-shield]: https://img.shields.io/github/license/resurtm/roguelike?style=for-the-badge
+[license-url]: https://github.com/resurtm/roguelike/blob/main/LICENSE.md

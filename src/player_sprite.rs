@@ -142,7 +142,9 @@ enum PlayerSpriteState {
     Run,        // orc3_run
     RunAttack,  // orc3_run_attack
     // TODO: Use states below.
-    Hurt,  // orc3_hurt
+    #[allow(dead_code)]
+    Hurt, // orc3_hurt
+    #[allow(dead_code)]
     Death, // orc3_death
 }
 
