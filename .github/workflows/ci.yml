@@ -10,6 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: apt install libsdl2-dev libsdl2-image-dev
       - run: cargo test --all-features
 
   formatting:
