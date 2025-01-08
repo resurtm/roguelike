@@ -12,9 +12,7 @@ impl Aabb {
 
     pub(crate) fn check_contact(&self, other: &Self) -> AabbContact {
         // mtv == minimum translation vector
-        // current minimum distance -- set max value so next value is always less
         let mut mtv_dist = f64::MAX;
-        // axis along which to travel with the minimum distance
         let mut mtv_axis = Vector2::new(0.0, 0.0);
 
         // axes of potential separation
@@ -22,8 +20,6 @@ impl Aabb {
         // (1, 0, 0) - x axis
         // (0, 1, 0) - y axis
         // (0, 0, 1) - z axis (not applicable here)
-
-        // x axis
         if !Self::check_sat_axis(
             Vector2::unit_x(),
             self.min.x,
@@ -35,8 +31,6 @@ impl Aabb {
         ) {
             return AabbContact::empty();
         }
-
-        // y axis
         if !Self::check_sat_axis(
             Vector2::unit_y(),
             self.min.y,
@@ -48,17 +42,13 @@ impl Aabb {
         ) {
             return AabbContact::empty();
         }
-
-        // z axis
-        // ^^^ (not applicable here)
+        // z axis is not applicable in our case, since we're in 2D
 
         // mtv (== minimum translation vector) = normal * penetration
         let normal = mtv_axis.normalize();
-
         // multiply the penetration depth by itself plus a small increment
         // when the penetration is resolved using the mtv, it will no longer intersect
         let penetration = f64::sqrt(mtv_dist) * 1.001;
-
         AabbContact::new(penetration, normal)
     }
 
@@ -81,9 +71,9 @@ impl Aabb {
         // - compute the intersection interval for that axis
         // - keep the smallest intersection/penetration value
 
-        let axis_len_square = axis.dot(axis);
+        let axis_len_sq = axis.dot(axis);
         // if the axis is degenerate then ignore
-        if axis_len_square < 1.0e-8 {
+        if axis_len_sq < 1.0e-8 {
             return true;
         }
 
@@ -101,14 +91,14 @@ impl Aabb {
         let overlap = if d0 < d1 { d0 } else { -d1 };
 
         // the mtd vector for that axis
-        let sep = axis * (overlap / axis_len_square);
-        let sep_len_square = sep.dot(sep);
+        let sep = axis * (overlap / axis_len_sq);
+        let sep_len_sq = sep.dot(sep);
 
         // if that vector is smaller than our computed minimum translation distance,
         // then use that vector as our current minimum translation vector & distance
-        if sep_len_square < *mtv_dist {
+        if sep_len_sq < *mtv_dist {
             *mtv_axis = sep;
-            *mtv_dist = sep_len_square;
+            *mtv_dist = sep_len_sq;
         }
 
         true
@@ -141,7 +131,7 @@ impl AbsDiffEq for AabbContact {
 
     fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
         self.intersects == other.intersects
-            && f64::abs_diff_eq(&self.penetration, &other.penetration, epsilon)
+            && self.penetration.abs_diff_eq(&other.penetration, epsilon)
             && self.min_trans.abs_diff_eq(&other.min_trans, epsilon)
     }
 }
@@ -158,7 +148,7 @@ impl RelativeEq for AabbContact {
         max_relative: Self::Epsilon,
     ) -> bool {
         self.intersects == other.intersects
-            && f64::relative_eq(&self.penetration, &other.penetration, epsilon, max_relative)
+            && self.penetration.relative_eq(&other.penetration, epsilon, max_relative)
             && self.min_trans.relative_eq(&other.min_trans, epsilon, max_relative)
     }
 }
