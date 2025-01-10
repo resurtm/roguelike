@@ -1,6 +1,6 @@
 use crate::{
     camera::Camera,
-    consts::{WINDOW_HEIGHT, WINDOW_WIDTH},
+    consts::WINDOW_SIZE,
     player::Player,
     textures::{TextureID, Textures},
     types::Direction,
@@ -40,9 +40,9 @@ impl PlayerDisplay {
             SRC_SIZE,
         );
         let dst = Rect::new(
-            (WINDOW_WIDTH / 2) as i32 - cam.position.x as i32 + self.location.x as i32
+            (WINDOW_SIZE.0 / 2) as i32 - cam.position.x as i32 + self.location.x as i32
                 - (DST_SIZE / 2) as i32,
-            (WINDOW_HEIGHT / 2) as i32 - cam.position.y as i32 + self.location.y as i32
+            (WINDOW_SIZE.1 / 2) as i32 - cam.position.y as i32 + self.location.y as i32
                 - (DST_SIZE / 2) as i32,
             DST_SIZE,
             DST_SIZE,

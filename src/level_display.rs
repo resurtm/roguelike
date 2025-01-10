@@ -1,6 +1,6 @@
 use crate::{
     camera::Camera,
-    consts::{TILE_SIZE, TILE_TEX_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH},
+    consts::{TILE_SIZE, TILE_TEX_SIZE, WINDOW_SIZE},
     dungeon_tiles::DungeonTile,
     level::Level,
     level_collision::LevelCollision,
@@ -56,8 +56,9 @@ impl<'a> LevelDisplay<'a> {
                     TILE_TEX_SIZE,
                 );
                 let dst = Rect::new(
-                    (WINDOW_WIDTH / 2) as i32 - cam.position.x as i32 + x as i32 * TILE_SIZE as i32,
-                    (WINDOW_HEIGHT / 2) as i32 - cam.position.y as i32
+                    (WINDOW_SIZE.0 / 2) as i32 - cam.position.x as i32
+                        + x as i32 * TILE_SIZE as i32,
+                    (WINDOW_SIZE.1 / 2) as i32 - cam.position.y as i32
                         + y as i32 * TILE_SIZE as i32,
                     TILE_SIZE,
                     TILE_SIZE,
@@ -77,8 +78,8 @@ impl<'a> LevelDisplay<'a> {
         can.set_draw_color(Color::RGB(255, 0, 0));
         for aabb in col.aabbs.iter() {
             can.draw_rect(Rect::new(
-                (WINDOW_WIDTH / 2) as i32 - cam.position.x as i32 + aabb.min.x as i32,
-                (WINDOW_HEIGHT / 2) as i32 - cam.position.y as i32 + aabb.min.y as i32,
+                (WINDOW_SIZE.0 / 2) as i32 - cam.position.x as i32 + aabb.min.x as i32,
+                (WINDOW_SIZE.1 / 2) as i32 - cam.position.y as i32 + aabb.min.y as i32,
                 (aabb.max.x - aabb.min.x) as u32,
                 (aabb.max.y - aabb.min.y) as u32,
             ))

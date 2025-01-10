@@ -1,5 +1,5 @@
 use crate::{
-    consts::{WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH},
+    consts::{WINDOW_SIZE, WINDOW_TITLE},
     input::Input,
 };
 use sdl2::{
@@ -26,7 +26,7 @@ impl DirectMedia {
         let event_pump = context.event_pump().map_err(DirectMediaError::EventPump)?;
         let video = context.video().map_err(DirectMediaError::Video)?;
         let window =
-            video.window(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT).position_centered().build()?;
+            video.window(WINDOW_TITLE, WINDOW_SIZE.0, WINDOW_SIZE.1).position_centered().build()?;
         let canvas = window.into_canvas().build().map_err(DirectMediaError::Canvas)?;
         let tex_creator = canvas.texture_creator();
         Ok(DirectMedia { event_pump, canvas, tex_creator, is_alive: true })
