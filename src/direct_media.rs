@@ -10,30 +10,29 @@ use sdl2::{
     video::{Window, WindowBuildError, WindowContext},
     EventPump, IntegerOrSdlError,
 };
-use std::{thread::sleep, time::Duration};
 use thiserror::Error;
 
 pub(crate) struct DirectMedia {
-    event_pump: EventPump,
+    events: EventPump,
     pub(crate) canvas: Canvas<Window>,
     pub(crate) tex_creator: TextureCreator<WindowContext>,
     is_alive: bool,
 }
 
 impl DirectMedia {
-    pub(crate) fn new() -> Result<DirectMedia, DirectMediaError> {
+    pub(crate) fn new() -> Result<Self, DirectMediaError> {
         let context = sdl2::init().map_err(DirectMediaError::Context)?;
-        let event_pump = context.event_pump().map_err(DirectMediaError::EventPump)?;
+        let events = context.event_pump().map_err(DirectMediaError::EventPump)?;
         let video = context.video().map_err(DirectMediaError::Video)?;
         let window =
             video.window(WINDOW_TITLE, WINDOW_SIZE.0, WINDOW_SIZE.1).position_centered().build()?;
         let canvas = window.into_canvas().build().map_err(DirectMediaError::Canvas)?;
         let tex_creator = canvas.texture_creator();
-        Ok(DirectMedia { event_pump, canvas, tex_creator, is_alive: true })
+        Ok(Self { events, canvas, tex_creator, is_alive: true })
     }
 
     pub(crate) fn handle_events(&mut self, input: &mut Input) -> bool {
-        for event in self.event_pump.poll_iter() {
+        for event in self.events.poll_iter() {
             match event {
                 Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     self.is_alive = false
@@ -52,7 +51,7 @@ impl DirectMedia {
 
     pub(crate) fn present_end(&mut self) {
         self.canvas.present();
-        sleep(Duration::new(0, FRAME_DELAY_NSECS));
+        std::thread::sleep(std::time::Duration::new(0, FRAME_DELAY_NSECS));
     }
 }
 
