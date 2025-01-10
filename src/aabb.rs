@@ -6,8 +6,8 @@ pub(crate) struct Aabb {
 }
 
 impl Aabb {
-    pub(crate) fn new(min: Point2<f64>, max: Point2<f64>) -> Aabb {
-        Aabb { min, max }
+    pub(crate) fn new(min: Point2<f64>, max: Point2<f64>) -> Self {
+        Self { min, max }
     }
 
     pub(crate) fn check_contact(&self, other: &Self) -> AabbContact {
@@ -113,12 +113,12 @@ pub(crate) struct AabbContact {
 }
 
 impl AabbContact {
-    pub(crate) fn empty() -> AabbContact {
-        AabbContact { intersects: false, penetration: 0.0, min_trans: Vector2::new(0.0, 0.0) }
+    pub(crate) fn empty() -> Self {
+        Self { intersects: false, penetration: 0.0, min_trans: Vector2::new(0.0, 0.0) }
     }
 
-    pub(crate) fn new(penetration: f64, min_trans: Vector2<f64>) -> AabbContact {
-        AabbContact { intersects: true, penetration, min_trans }
+    pub(crate) fn new(penetration: f64, min_trans: Vector2<f64>) -> Self {
+        Self { intersects: true, penetration, min_trans }
     }
 }
 

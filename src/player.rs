@@ -1,4 +1,4 @@
-use crate::{aabb::Aabb, input::Input, level_collision::LevelCollision};
+use crate::{aabb::Aabb, consts::START_POSITION, input::Input, level_collision::LevelCollision};
 use cgmath::{Point2, Vector2};
 
 pub(crate) struct Player {
@@ -15,7 +15,7 @@ pub(crate) struct Player {
 impl Player {
     pub(crate) fn new() -> Player {
         Player {
-            position: Point2::new(450.0, 300.0),
+            position: Point2::new(START_POSITION.0, START_POSITION.1),
 
             velocity: Vector2::new(0.0, 0.0),
             velocity_delta: 0.35,
