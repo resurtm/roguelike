@@ -1,4 +1,5 @@
 mod aabb;
+pub mod app;
 mod camera;
 mod consts;
 mod direct_media;
