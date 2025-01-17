@@ -13,3 +13,4 @@ mod player;
 mod player_sprite;
 mod textures;
 mod types;
+mod video;
