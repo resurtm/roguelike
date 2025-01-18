@@ -1,10 +1,10 @@
 use crate::consts::WINDOW_SIZE;
 use cgmath::{ortho, Matrix4, Point3, SquareMatrix, Vector3};
 use image::{GenericImageView, ImageError};
-use std::iter;
+use std::{iter, sync::Arc};
 use thiserror::Error;
 use wgpu::util::DeviceExt;
-use winit::{event::WindowEvent, window::Window};
+use winit::window::Window;
 
 pub(crate) struct Texture {
     #[allow(unused)]
@@ -328,15 +328,14 @@ pub(crate) struct VideoState<'a> {
 
     // this should be the last in declaration order and must be dropped after the surface,
     // because the surface contains unsafe references to the window's resources
-    window: &'a Window,
-
+    // window: &'a Window,
     diffuse_texture_group: TextureGroup,
     textured_square: TexturedSquare,
     observer_group: ObserverGroup,
 }
 
 impl<'a> VideoState<'a> {
-    pub(crate) async fn new(window: &'a Window) -> VideoState<'a> {
+    pub(crate) async fn new(window: Arc<Window>) -> VideoState<'a> {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -452,15 +451,10 @@ impl<'a> VideoState<'a> {
             config,
             size,
             render_pipeline,
-            window,
             diffuse_texture_group,
             textured_square,
             observer_group,
         }
-    }
-
-    pub(crate) fn window(&self) -> &Window {
-        &self.window
     }
 
     pub(crate) fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -471,13 +465,6 @@ impl<'a> VideoState<'a> {
             self.surface.configure(&self.device, &self.config);
         }
     }
-
-    pub(crate) fn input(&mut self, _event: &WindowEvent) -> bool {
-        false
-    }
-
-    pub(crate) fn update(&mut self) {}
-
     pub(crate) fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());

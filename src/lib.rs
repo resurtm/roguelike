@@ -1,5 +1,4 @@
 mod aabb;
-pub mod app;
 mod camera;
 mod consts;
 mod direct_media;
@@ -14,3 +13,4 @@ mod player_sprite;
 mod textures;
 mod types;
 mod video;
+pub mod window;
