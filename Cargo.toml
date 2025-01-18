@@ -17,7 +17,7 @@ log = "0.4"
 wgpu = "22.0"
 pollster = "0.3"
 bytemuck = { version = "1.16", features = ["derive"] }
-image = { version = "0.24", pathdefault-features = false, features = [
+image = { version = "0.24", default-features = false, features = [
   "png",
   "jpeg",
 ] }

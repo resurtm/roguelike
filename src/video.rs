@@ -279,6 +279,7 @@ impl Vertex {
 
 pub(crate) struct TexturedSquare {
     pub(crate) vertex_buffer: wgpu::Buffer,
+    #[allow(dead_code)]
     pub(crate) num_vertices: u32,
 
     pub(crate) index_buffer: wgpu::Buffer,
@@ -318,17 +319,14 @@ pub(crate) struct VideoState<'a> {
     #[allow(dead_code)]
     instance: wgpu::Instance,
     #[allow(dead_code)]
-    adapter: wgpu::Adapter,
     surface: wgpu::Surface<'a>,
+    #[allow(dead_code)]
+    adapter: wgpu::Adapter,
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
-    pub(crate) size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
 
-    // this should be the last in declaration order and must be dropped after the surface,
-    // because the surface contains unsafe references to the window's resources
-    // window: &'a Window,
     diffuse_texture_group: TextureGroup,
     textured_square: TexturedSquare,
     observer_group: ObserverGroup,
@@ -336,13 +334,12 @@ pub(crate) struct VideoState<'a> {
 
 impl<'a> VideoState<'a> {
     pub(crate) async fn new(window: Arc<Window>) -> VideoState<'a> {
-        let size = window.inner_size();
-
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
 
+        let window_size = window.inner_size();
         let surface = instance.create_surface(window).unwrap();
 
         let adapter = instance
@@ -367,6 +364,14 @@ impl<'a> VideoState<'a> {
             .await
             .unwrap();
 
+        let diffuse_texture_group = TextureGroup::new(
+            &device,
+            &queue,
+            include_bytes!("../assets/dungeon/Dungeon_Tileset.png"),
+        );
+        let textured_square = TexturedSquare::new(&device);
+        let observer_group = ObserverGroup::new(&device);
+
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
             .formats
@@ -377,35 +382,26 @@ impl<'a> VideoState<'a> {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
-            width: size.width,
-            height: size.height,
+            width: window_size.width,
+            height: window_size.height,
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
         };
 
-        let diffuse_texture_group = TextureGroup::new(
-            &device,
-            &queue,
-            include_bytes!("../assets/dungeon/Dungeon_Tileset.png"),
-        );
-        let textured_square = TexturedSquare::new(&device);
-        let observer_group = ObserverGroup::new(&device);
-
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Render Pipeline Layout"),
+                label: Some("render_pipeline_layout"),
                 bind_group_layouts: &[
                     &diffuse_texture_group.bind_group_layout,
                     &observer_group.bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
-
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
+            label: Some("render_pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
@@ -449,7 +445,6 @@ impl<'a> VideoState<'a> {
             device,
             queue,
             config,
-            size,
             render_pipeline,
             diffuse_texture_group,
             textured_square,
@@ -457,25 +452,25 @@ impl<'a> VideoState<'a> {
         }
     }
 
-    pub(crate) fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
-            self.size = new_size;
-            self.config.width = new_size.width;
-            self.config.height = new_size.height;
+    pub(crate) fn resize(&mut self, size: winit::dpi::PhysicalSize<u32>) {
+        if size.width > 0 && size.height > 0 {
+            self.config.width = size.width;
+            self.config.height = size.height;
             self.surface.configure(&self.device, &self.config);
         }
     }
+
     pub(crate) fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
+            label: Some("render_encoder"),
         });
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
+                label: Some("render_pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,

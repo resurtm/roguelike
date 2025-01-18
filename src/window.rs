@@ -53,7 +53,7 @@ pub async fn run() -> Result<(), RunError> {
                 match video_state.render() {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-                        video_state.resize(video_state.size);
+                        video_state.resize(window.inner_size());
                     }
                     Err(wgpu::SurfaceError::OutOfMemory) => {
                         log::error!("OutOfMemory");
