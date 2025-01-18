@@ -8,7 +8,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use crate::video::{ObserverGroup, Texture};
+use crate::video::{ObserverGroup, Texture, TextureGroup};
 
 pub async fn run() {
     env_logger::init();
@@ -85,12 +85,11 @@ struct State<'a> {
     index_buffer: wgpu::Buffer,
     num_indices: u32,
 
-    diffuse_bind_group: wgpu::BindGroup,
-
     // this should be the last in declaration order and must be dropped after the
     // surface, because the surface contains unsafe references to the window's resources
     window: &'a Window,
 
+    diffuse_texture_group: TextureGroup,
     observer_group: ObserverGroup,
 }
 
@@ -127,48 +126,11 @@ impl<'a> State<'a> {
             .await
             .unwrap();
 
-        let diffuse_image_bytes = include_bytes!("../assets/dungeon/Dungeon_Tileset.png");
-        let diffuse_texture =
-            Texture::from_bytes(&device, &queue, diffuse_image_bytes, "Dungeon_Tileset").unwrap();
-
-        let texture_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        // This should match the filterable field of the
-                        // corresponding Texture entry above.
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
-                label: Some("texture_bind_group_layout"),
-            });
-        let diffuse_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                },
-            ],
-            label: Some("diffuse_bind_group"),
-        });
+        let diffuse_texture_group = TextureGroup::new(
+            &device,
+            &queue,
+            include_bytes!("../assets/dungeon/Dungeon_Tileset.png"),
+        );
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
@@ -195,7 +157,7 @@ impl<'a> State<'a> {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &[
-                    &texture_bind_group_layout,
+                    &diffuse_texture_group.bind_group_layout,
                     &observer_group.bind_group_layout,
                 ],
                 push_constant_ranges: &[],
@@ -266,7 +228,7 @@ impl<'a> State<'a> {
             index_buffer,
             num_indices,
             window,
-            diffuse_bind_group,
+            diffuse_texture_group,
             observer_group,
         }
     }
@@ -320,7 +282,7 @@ impl<'a> State<'a> {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+            render_pass.set_bind_group(0, &self.diffuse_texture_group.bind_group, &[]);
             render_pass.set_bind_group(1, &self.observer_group.bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
