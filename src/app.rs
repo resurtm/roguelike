@@ -1,19 +1,25 @@
-use image::GenericImageView;
+use crate::{
+    consts::{WINDOW_SIZE, WINDOW_TITLE},
+    video::{ObserverGroup, TextureGroup, TexturedSquare, Vertex},
+};
 use std::iter;
-use wgpu::util::DeviceExt;
 use winit::{
+    dpi::{PhysicalPosition, PhysicalSize},
     event::{ElementState, Event, KeyEvent, WindowEvent},
     event_loop::EventLoop,
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowBuilder},
 };
 
-use crate::video::{ObserverGroup, Texture, TextureGroup};
-
 pub async fn run() {
     env_logger::init();
     let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let window = WindowBuilder::new()
+        .with_inner_size(PhysicalSize::new(WINDOW_SIZE.0, WINDOW_SIZE.1))
+        .with_position(PhysicalPosition::new(50, 50))
+        .with_title(WINDOW_TITLE)
+        .build(&event_loop)
+        .unwrap();
 
     let mut state = State::new(&window).await;
     let mut surface_configured = false;
@@ -80,16 +86,12 @@ struct State<'a> {
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
 
-    vertex_buffer: wgpu::Buffer,
-    num_vertices: u32,
-    index_buffer: wgpu::Buffer,
-    num_indices: u32,
-
     // this should be the last in declaration order and must be dropped after the
     // surface, because the surface contains unsafe references to the window's resources
     window: &'a Window,
 
     diffuse_texture_group: TextureGroup,
+    textured_square: TexturedSquare,
     observer_group: ObserverGroup,
 }
 
@@ -126,12 +128,6 @@ impl<'a> State<'a> {
             .await
             .unwrap();
 
-        let diffuse_texture_group = TextureGroup::new(
-            &device,
-            &queue,
-            include_bytes!("../assets/dungeon/Dungeon_Tileset.png"),
-        );
-
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
             .formats
@@ -150,6 +146,12 @@ impl<'a> State<'a> {
             desired_maximum_frame_latency: 2,
         };
 
+        let diffuse_texture_group = TextureGroup::new(
+            &device,
+            &queue,
+            include_bytes!("../assets/dungeon/Dungeon_Tileset.png"),
+        );
+        let textured_square = TexturedSquare::new(&device);
         let observer_group = ObserverGroup::new(&device);
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
@@ -201,19 +203,6 @@ impl<'a> State<'a> {
             cache: None,
         });
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-        let num_vertices = VERTICES.len() as u32;
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(INDICES),
-            usage: wgpu::BufferUsages::INDEX,
-        });
-        let num_indices = INDICES.len() as u32;
-
         Self {
             instance,
             adapter,
@@ -223,12 +212,9 @@ impl<'a> State<'a> {
             config,
             size,
             render_pipeline,
-            vertex_buffer,
-            num_vertices,
-            index_buffer,
-            num_indices,
             window,
             diffuse_texture_group,
+            textured_square,
             observer_group,
         }
     }
@@ -284,51 +270,17 @@ impl<'a> State<'a> {
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.diffuse_texture_group.bind_group, &[]);
             render_pass.set_bind_group(1, &self.observer_group.bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            render_pass.set_vertex_buffer(0, self.textured_square.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(
+                self.textured_square.index_buffer.slice(..),
+                wgpu::IndexFormat::Uint16,
+            );
+            render_pass.draw_indexed(0..self.textured_square.num_indices, 0, 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
         output.present();
 
         Ok(())
-    }
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
-    position: [f32; 3],
-    tex_coords: [f32; 2],
-}
-
-const VERTICES: &[Vertex] = &[
-    Vertex { position: [-350.0, 0.0, -350.0], tex_coords: [0.0, 1.0] },
-    Vertex { position: [-350.0, 0.0, 350.0], tex_coords: [0.0, 0.0] },
-    Vertex { position: [350.0, 0.0, 350.0], tex_coords: [1.0, 0.0] },
-    Vertex { position: [350.0, 0.0, -350.0], tex_coords: [1.0, 1.0] },
-];
-
-const INDICES: &[u16] = &[0, 2, 3, 0, 1, 2];
-
-impl Vertex {
-    fn desc() -> wgpu::VertexBufferLayout<'static> {
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-                wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x2,
-                },
-            ],
-        }
     }
 }

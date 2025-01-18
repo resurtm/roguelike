@@ -157,10 +157,10 @@ impl Observer {
             target: Point3::new(0.0, 0.0, 0.0),
             up: Vector3::unit_z(),
 
-            left: -((WINDOW_SIZE.0 / 2) as f32),
-            right: (WINDOW_SIZE.0 / 2) as f32,
-            bottom: -((WINDOW_SIZE.1 / 2) as f32),
-            top: (WINDOW_SIZE.1 / 2) as f32,
+            left: -((WINDOW_SIZE.0 / 2 / PIXELS_PER_TILE) as f32),
+            right: (WINDOW_SIZE.0 / 2 / PIXELS_PER_TILE) as f32,
+            bottom: -((WINDOW_SIZE.1 / 2 / PIXELS_PER_TILE) as f32),
+            top: (WINDOW_SIZE.1 / 2 / PIXELS_PER_TILE) as f32,
             near: -1.0,
             far: 1.0,
         }
@@ -172,6 +172,8 @@ impl Observer {
         OPENGL_TO_WGPU_MATRIX * proj * view
     }
 }
+
+const PIXELS_PER_TILE: u32 = 64;
 
 #[rustfmt::skip]
 const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
@@ -244,3 +246,68 @@ impl ObserverGroup {
         Self { observer, uniform, buffer, bind_group_layout, bind_group }
     }
 }
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub(crate) struct Vertex {
+    position: [f32; 3],
+    tex_coords: [f32; 2],
+}
+
+impl Vertex {
+    pub(crate) fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
+            ],
+        }
+    }
+}
+
+pub(crate) struct TexturedSquare {
+    pub(crate) vertex_buffer: wgpu::Buffer,
+    pub(crate) num_vertices: u32,
+
+    pub(crate) index_buffer: wgpu::Buffer,
+    pub(crate) num_indices: u32,
+}
+
+impl TexturedSquare {
+    pub(crate) fn new(device: &wgpu::Device) -> Self {
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("textured_square_vertex_buffer"),
+            contents: bytemuck::cast_slice(TEXTURED_SQUARE_VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let num_vertices = TEXTURED_SQUARE_VERTICES.len() as u32;
+
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("textured_square_index_buffer"),
+            contents: bytemuck::cast_slice(TEXTURED_SQUARE_INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+        let num_indices = TEXTURED_SQUARE_INDICES.len() as u32;
+
+        Self { vertex_buffer, num_vertices, index_buffer, num_indices }
+    }
+}
+
+const TEXTURED_SQUARE_VERTICES: &[Vertex] = &[
+    Vertex { position: [-1.0, 0.0, -1.0], tex_coords: [0.0, 1.0] },
+    Vertex { position: [-1.0, 0.0, 1.0], tex_coords: [0.0, 0.0] },
+    Vertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 0.0] },
+    Vertex { position: [1.0, 0.0, -1.0], tex_coords: [1.0, 1.0] },
+];
+
+const TEXTURED_SQUARE_INDICES: &[u16] = &[0, 2, 3, 0, 1, 2];
