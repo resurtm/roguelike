@@ -8,7 +8,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use crate::video::Texture;
+use crate::video::{ObserverGroup, Texture};
 
 pub async fn run() {
     env_logger::init();
@@ -90,6 +90,8 @@ struct State<'a> {
     // this should be the last in declaration order and must be dropped after the
     // surface, because the surface contains unsafe references to the window's resources
     window: &'a Window,
+
+    observer_group: ObserverGroup,
 }
 
 impl<'a> State<'a> {
@@ -186,11 +188,16 @@ impl<'a> State<'a> {
             desired_maximum_frame_latency: 2,
         };
 
+        let observer_group = ObserverGroup::new(&device);
+
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout],
+                bind_group_layouts: &[
+                    &texture_bind_group_layout,
+                    &observer_group.bind_group_layout,
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -260,6 +267,7 @@ impl<'a> State<'a> {
             num_indices,
             window,
             diffuse_bind_group,
+            observer_group,
         }
     }
 
@@ -297,7 +305,12 @@ impl<'a> State<'a> {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.1, g: 0.2, b: 0.3, a: 1.0 }),
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.05,
+                            g: 0.10,
+                            b: 0.15,
+                            a: 1.00,
+                        }),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -308,6 +321,7 @@ impl<'a> State<'a> {
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+            render_pass.set_bind_group(1, &self.observer_group.bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
@@ -328,13 +342,13 @@ struct Vertex {
 }
 
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [-0.5, -0.5, 0.0], tex_coords: [0.0, 1.0] },
-    Vertex { position: [-0.5, 0.5, 0.0], tex_coords: [0.0, 0.0] },
-    Vertex { position: [0.5, 0.5, 0.0], tex_coords: [1.0, 0.0] },
-    Vertex { position: [0.5, -0.5, 0.0], tex_coords: [1.0, 1.0] },
+    Vertex { position: [-350.0, 0.0, -350.0], tex_coords: [0.0, 1.0] },
+    Vertex { position: [-350.0, 0.0, 350.0], tex_coords: [0.0, 0.0] },
+    Vertex { position: [350.0, 0.0, 350.0], tex_coords: [1.0, 0.0] },
+    Vertex { position: [350.0, 0.0, -350.0], tex_coords: [1.0, 1.0] },
 ];
 
-const INDICES: &[u16] = &[0, 3, 2, 0, 2, 1];
+const INDICES: &[u16] = &[0, 2, 3, 0, 1, 2];
 
 impl Vertex {
     fn desc() -> wgpu::VertexBufferLayout<'static> {
