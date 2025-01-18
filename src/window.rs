@@ -1,6 +1,6 @@
 use crate::{
     consts::{WINDOW_SIZE, WINDOW_TITLE},
-    video::VideoState,
+    video::{VideoState, VideoStateError},
 };
 use std::sync::Arc;
 use thiserror::Error;
@@ -24,7 +24,7 @@ pub async fn run() -> Result<(), RunError> {
             .with_title(WINDOW_TITLE)
             .build(&event_loop)?,
     );
-    let mut video_state = VideoState::new(Arc::clone(&window)).await;
+    let mut video_state = VideoState::new(Arc::clone(&window)).await?;
     let mut surface_ready = false;
 
     event_loop.run(move |event, control_flow| match event {
@@ -77,8 +77,11 @@ pub async fn run() -> Result<(), RunError> {
 #[derive(Error, Debug)]
 pub enum RunError {
     #[error("event loop error: {0}")]
-    EventLoopError(#[from] EventLoopError),
+    EventLoop(#[from] EventLoopError),
 
     #[error("os error: {0}")]
-    OsError(#[from] OsError),
+    Os(#[from] OsError),
+
+    #[error("video state error: {0}")]
+    VideoState(#[from] VideoStateError),
 }

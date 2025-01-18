@@ -3,7 +3,7 @@ use cgmath::{ortho, Matrix4, Point3, SquareMatrix, Vector3};
 use image::{GenericImageView, ImageError};
 use std::{iter, sync::Arc};
 use thiserror::Error;
-use wgpu::util::DeviceExt;
+use wgpu::{util::DeviceExt, CreateSurfaceError, RequestDeviceError};
 use winit::window::Window;
 
 pub(crate) struct Texture {
@@ -95,8 +95,12 @@ pub(crate) struct TextureGroup {
 }
 
 impl TextureGroup {
-    pub(crate) fn new(device: &wgpu::Device, queue: &wgpu::Queue, bytes: &[u8]) -> Self {
-        let texture = Texture::from_bytes(&device, &queue, bytes, "texture").unwrap();
+    pub(crate) fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        bytes: &[u8],
+    ) -> Result<Self, TextureError> {
+        let texture = Texture::from_bytes(device, queue, bytes, "texture")?;
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
@@ -135,7 +139,7 @@ impl TextureGroup {
             label: Some("texture_bind_group"),
         });
 
-        Self { texture, bind_group_layout, bind_group }
+        Ok(Self { texture, bind_group_layout, bind_group })
     }
 }
 
@@ -257,7 +261,7 @@ pub(crate) struct Vertex {
 }
 
 impl Vertex {
-    pub(crate) fn desc() -> wgpu::VertexBufferLayout<'static> {
+    pub(crate) fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
@@ -333,14 +337,14 @@ pub(crate) struct VideoState<'a> {
 }
 
 impl<'a> VideoState<'a> {
-    pub(crate) async fn new(window: Arc<Window>) -> VideoState<'a> {
+    pub(crate) async fn new(window: Arc<Window>) -> Result<VideoState<'a>, VideoStateError> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
 
         let window_size = window.inner_size();
-        let surface = instance.create_surface(window).unwrap();
+        let surface = instance.create_surface(window)?;
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -349,7 +353,7 @@ impl<'a> VideoState<'a> {
                 force_fallback_adapter: false,
             })
             .await
-            .unwrap();
+            .ok_or(VideoStateError::RequestAdapter())?;
 
         let (device, queue) = adapter
             .request_device(
@@ -361,31 +365,30 @@ impl<'a> VideoState<'a> {
                 },
                 None,
             )
-            .await
-            .unwrap();
+            .await?;
 
         let diffuse_texture_group = TextureGroup::new(
             &device,
             &queue,
             include_bytes!("../assets/dungeon/Dungeon_Tileset.png"),
-        );
+        )?;
         let textured_square = TexturedSquare::new(&device);
         let observer_group = ObserverGroup::new(&device);
 
-        let surface_caps = surface.get_capabilities(&adapter);
-        let surface_format = surface_caps
+        let surface_capabilities = surface.get_capabilities(&adapter);
+        let surface_format = surface_capabilities
             .formats
             .iter()
             .find(|f| f.is_srgb())
             .copied()
-            .unwrap_or(surface_caps.formats[0]);
+            .unwrap_or(surface_capabilities.formats[0]);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width: window_size.width,
             height: window_size.height,
-            present_mode: surface_caps.present_modes[0],
-            alpha_mode: surface_caps.alpha_modes[0],
+            present_mode: surface_capabilities.present_modes[0],
+            alpha_mode: surface_capabilities.alpha_modes[0],
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
         };
@@ -438,7 +441,7 @@ impl<'a> VideoState<'a> {
             cache: None,
         });
 
-        Self {
+        Ok(Self {
             instance,
             adapter,
             surface,
@@ -449,7 +452,7 @@ impl<'a> VideoState<'a> {
             diffuse_texture_group,
             textured_square,
             observer_group,
-        }
+        })
     }
 
     pub(crate) fn resize(&mut self, size: winit::dpi::PhysicalSize<u32>) {
@@ -505,4 +508,19 @@ impl<'a> VideoState<'a> {
 
         Ok(())
     }
+}
+
+#[derive(Error, Debug)]
+pub enum VideoStateError {
+    #[error("create surface error: {0}")]
+    CreateSurface(#[from] CreateSurfaceError),
+
+    #[error("request adapter error")]
+    RequestAdapter(),
+
+    #[error("request device error: {0}")]
+    RequestDevice(#[from] RequestDeviceError),
+
+    #[error("texture error: {0}")]
+    Texture(#[from] TextureError),
 }
