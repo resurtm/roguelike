@@ -1,15 +1,14 @@
-use cgmath::{ortho, perspective, Matrix4, Point3, SquareMatrix, Vector3, Vector4};
+use crate::consts::WINDOW_SIZE;
+use cgmath::{ortho, Matrix4, Point3, SquareMatrix, Vector3};
 use image::{GenericImageView, ImageError};
 use thiserror::Error;
 use wgpu::util::DeviceExt;
 
-use crate::consts::WINDOW_SIZE;
-
 pub(crate) struct Texture {
     #[allow(unused)]
-    pub texture: wgpu::Texture,
-    pub view: wgpu::TextureView,
-    pub sampler: wgpu::Sampler,
+    texture: wgpu::Texture,
+    pub(crate) view: wgpu::TextureView,
+    pub(crate) sampler: wgpu::Sampler,
 }
 
 impl Texture {
@@ -20,7 +19,7 @@ impl Texture {
         label: &str,
     ) -> Result<Self, TextureError> {
         let image = image::load_from_memory(bytes)?;
-        Ok(Self::load_internal(device, queue, &image, Some(label)))
+        Ok(Self::create_internal(device, queue, &image, Some(label)))
     }
 
     #[allow(unused)]
@@ -30,10 +29,10 @@ impl Texture {
         image: &image::DynamicImage,
         label: &str,
     ) -> Self {
-        Self::load_internal(device, queue, image, Some(label))
+        Self::create_internal(device, queue, image, Some(label))
     }
 
-    fn load_internal(
+    fn create_internal(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         image: &image::DynamicImage,
@@ -74,9 +73,6 @@ impl Texture {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
-            // mag_filter: wgpu::FilterMode::Linear,
-            // min_filter: wgpu::FilterMode::Nearest,
-            // mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
         Self { texture, view, sampler }
@@ -144,14 +140,17 @@ impl ObserverUniform {
         Self { view_proj: Matrix4::identity().into() }
     }
 
-    fn update(&mut self, observer: &Observer) {
+    fn apply_observer(&mut self, observer: &Observer) {
         self.view_proj = observer.build_matrix().into();
     }
 }
 
 pub(crate) struct ObserverGroup {
+    #[allow(unused)]
     observer: Observer,
+    #[allow(unused)]
     uniform: ObserverUniform,
+    #[allow(unused)]
     buffer: wgpu::Buffer,
     pub(crate) bind_group_layout: wgpu::BindGroupLayout,
     pub(crate) bind_group: wgpu::BindGroup,
@@ -162,7 +161,7 @@ impl ObserverGroup {
         let observer = Observer::default();
 
         let mut uniform = ObserverUniform::new();
-        uniform.update(&observer);
+        uniform.apply_observer(&observer);
 
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("observer_buffer"),
