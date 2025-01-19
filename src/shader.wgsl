@@ -4,6 +4,12 @@ struct ObserverUniform {
 @group(1) @binding(0)
 var<uniform> observer: ObserverUniform;
 
+struct MatrixUniform {
+    mat: mat4x4<f32>,
+};
+@group(2) @binding(0)
+var<uniform> transform: MatrixUniform;
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) tex_coords: vec2<f32>,
@@ -20,8 +26,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.tex_coords = model.tex_coords;
-    out.clip_position = observer.view_proj * vec4<f32>(model.position, 1.0);
-    // out.clip_position = vec4<f32>(model.position, 1.0);
+    out.clip_position = observer.view_proj * transform.mat * vec4<f32>(model.position, 1.0);
     return out;
 }
 

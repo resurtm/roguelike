@@ -288,6 +288,12 @@ impl Vertex {
     }
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct MatrixUniform {
+    mat: [[f32; 4]; 4],
+}
+
 pub(crate) struct VideoState<'a> {
     #[allow(dead_code)]
     instance: wgpu::Instance,
@@ -302,6 +308,10 @@ pub(crate) struct VideoState<'a> {
 
     observer_group: ObserverGroup,
     level_mesh: LevelMesh,
+    level_mesh_buffer: wgpu::Buffer,
+    level_mesh_bind_group: wgpu::BindGroup,
+    level_mesh_buffer_other: wgpu::Buffer,
+    level_mesh_bind_group_other: wgpu::BindGroup,
 }
 
 impl<'a> VideoState<'a> {
@@ -336,7 +346,50 @@ impl<'a> VideoState<'a> {
             .await?;
 
         let observer_group = ObserverGroup::new(&device);
+
         let level_mesh = LevelMesh::new(&device, &queue)?;
+        let level_mesh_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("level_mesh_buffer"),
+            size: std::mem::size_of::<[MatrixUniform; 1]>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let level_mesh_buffer_other = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("level_mesh_buffer_other"),
+            size: std::mem::size_of::<[MatrixUniform; 1]>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let level_mesh_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: Some("level_mesh_bind_group_layout"),
+            });
+        let level_mesh_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("level_mesh_bind_group"),
+            layout: &level_mesh_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: level_mesh_buffer.as_entire_binding(),
+            }],
+        });
+        let level_mesh_bind_group_other = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("level_mesh_bind_group_other"),
+            layout: &level_mesh_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: level_mesh_buffer_other.as_entire_binding(),
+            }],
+        });
 
         let surface_capabilities = surface.get_capabilities(&adapter);
         let surface_format = surface_capabilities
@@ -363,6 +416,7 @@ impl<'a> VideoState<'a> {
                 bind_group_layouts: &[
                     &level_mesh.texture_group.bind_group_layout,
                     &observer_group.bind_group_layout,
+                    &level_mesh_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -414,6 +468,10 @@ impl<'a> VideoState<'a> {
             render_pipeline,
             observer_group,
             level_mesh,
+            level_mesh_buffer,
+            level_mesh_buffer_other,
+            level_mesh_bind_group,
+            level_mesh_bind_group_other,
         })
     }
 
@@ -462,8 +520,20 @@ impl<'a> VideoState<'a> {
                 self.level_mesh.index_buffer.slice(..),
                 wgpu::IndexFormat::Uint16,
             );
-            let n = 4 * 10;
-            render_pass.draw_indexed(0..6, n, 0..1);
+
+            let m = MatrixUniform {
+                mat: Matrix4::from_translation((10.0f32, 0.0f32, 0.0f32).into()).into(),
+            };
+            render_pass.set_bind_group(2, &self.level_mesh_bind_group, &[]);
+            self.queue.write_buffer(&self.level_mesh_buffer, 0, bytemuck::cast_slice(&m.mat));
+            render_pass.draw_indexed(0..6, 4 * 10, 0..1);
+
+            let m = MatrixUniform {
+                mat: Matrix4::from_translation((-10.0f32, 0.0f32, 0.0f32).into()).into(),
+            };
+            render_pass.set_bind_group(2, &self.level_mesh_bind_group_other, &[]);
+            self.queue.write_buffer(&self.level_mesh_buffer_other, 0, bytemuck::cast_slice(&m.mat));
+            render_pass.draw_indexed(0..6, 4 * 9, 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
