@@ -7,6 +7,7 @@ mod input;
 mod level;
 mod level_collision;
 mod level_display;
+mod level_mesh;
 pub mod main_loop;
 mod player;
 mod player_sprite;

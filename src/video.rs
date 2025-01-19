@@ -1,5 +1,8 @@
-use crate::consts::WINDOW_SIZE;
-use cgmath::{ortho, Matrix4, Point3, SquareMatrix, Vector3};
+use crate::{
+    consts::WINDOW_SIZE,
+    level_mesh::{LevelMesh, LevelMeshError},
+};
+use cgmath::{ortho, Matrix4, Point2, Point3, SquareMatrix, Vector3};
 use image::{GenericImageView, ImageError};
 use std::{iter, sync::Arc};
 use thiserror::Error;
@@ -179,7 +182,7 @@ impl Observer {
     }
 }
 
-const PIXELS_PER_TILE: u32 = 64;
+const PIXELS_PER_TILE: u32 = 32 * 3;
 
 #[rustfmt::skip]
 const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
@@ -261,6 +264,10 @@ pub(crate) struct Vertex {
 }
 
 impl Vertex {
+    pub(crate) fn new(position: Point3<f32>, tex_coords: Point2<f32>) -> Self {
+        Self { position: position.into(), tex_coords: tex_coords.into() }
+    }
+
     pub(crate) fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
@@ -281,44 +288,6 @@ impl Vertex {
     }
 }
 
-pub(crate) struct TexturedSquare {
-    pub(crate) vertex_buffer: wgpu::Buffer,
-    #[allow(dead_code)]
-    pub(crate) num_vertices: u32,
-
-    pub(crate) index_buffer: wgpu::Buffer,
-    pub(crate) num_indices: u32,
-}
-
-impl TexturedSquare {
-    pub(crate) fn new(device: &wgpu::Device) -> Self {
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("textured_square_vertex_buffer"),
-            contents: bytemuck::cast_slice(TEXTURED_SQUARE_VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-        let num_vertices = TEXTURED_SQUARE_VERTICES.len() as u32;
-
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("textured_square_index_buffer"),
-            contents: bytemuck::cast_slice(TEXTURED_SQUARE_INDICES),
-            usage: wgpu::BufferUsages::INDEX,
-        });
-        let num_indices = TEXTURED_SQUARE_INDICES.len() as u32;
-
-        Self { vertex_buffer, num_vertices, index_buffer, num_indices }
-    }
-}
-
-const TEXTURED_SQUARE_VERTICES: &[Vertex] = &[
-    Vertex { position: [-1.0, 0.0, -1.0], tex_coords: [0.0, 1.0] },
-    Vertex { position: [-1.0, 0.0, 1.0], tex_coords: [0.0, 0.0] },
-    Vertex { position: [1.0, 0.0, 1.0], tex_coords: [1.0, 0.0] },
-    Vertex { position: [1.0, 0.0, -1.0], tex_coords: [1.0, 1.0] },
-];
-
-const TEXTURED_SQUARE_INDICES: &[u16] = &[0, 2, 3, 0, 1, 2];
-
 pub(crate) struct VideoState<'a> {
     #[allow(dead_code)]
     instance: wgpu::Instance,
@@ -331,9 +300,8 @@ pub(crate) struct VideoState<'a> {
     config: wgpu::SurfaceConfiguration,
     render_pipeline: wgpu::RenderPipeline,
 
-    diffuse_texture_group: TextureGroup,
-    textured_square: TexturedSquare,
     observer_group: ObserverGroup,
+    level_mesh: LevelMesh,
 }
 
 impl<'a> VideoState<'a> {
@@ -367,13 +335,8 @@ impl<'a> VideoState<'a> {
             )
             .await?;
 
-        let diffuse_texture_group = TextureGroup::new(
-            &device,
-            &queue,
-            include_bytes!("../assets/dungeon/Dungeon_Tileset.png"),
-        )?;
-        let textured_square = TexturedSquare::new(&device);
         let observer_group = ObserverGroup::new(&device);
+        let level_mesh = LevelMesh::new(&device, &queue)?;
 
         let surface_capabilities = surface.get_capabilities(&adapter);
         let surface_format = surface_capabilities
@@ -398,7 +361,7 @@ impl<'a> VideoState<'a> {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("render_pipeline_layout"),
                 bind_group_layouts: &[
-                    &diffuse_texture_group.bind_group_layout,
+                    &level_mesh.texture_group.bind_group_layout,
                     &observer_group.bind_group_layout,
                 ],
                 push_constant_ranges: &[],
@@ -449,9 +412,8 @@ impl<'a> VideoState<'a> {
             queue,
             config,
             render_pipeline,
-            diffuse_texture_group,
-            textured_square,
             observer_group,
+            level_mesh,
         })
     }
 
@@ -493,14 +455,15 @@ impl<'a> VideoState<'a> {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.diffuse_texture_group.bind_group, &[]);
+            render_pass.set_bind_group(0, &self.level_mesh.texture_group.bind_group, &[]);
             render_pass.set_bind_group(1, &self.observer_group.bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.textured_square.vertex_buffer.slice(..));
+            render_pass.set_vertex_buffer(0, self.level_mesh.vertex_buffer.slice(..));
             render_pass.set_index_buffer(
-                self.textured_square.index_buffer.slice(..),
+                self.level_mesh.index_buffer.slice(..),
                 wgpu::IndexFormat::Uint16,
             );
-            render_pass.draw_indexed(0..self.textured_square.num_indices, 0, 0..1);
+            let n = 4 * 10;
+            render_pass.draw_indexed(0..6, n, 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
@@ -523,4 +486,7 @@ pub enum VideoStateError {
 
     #[error("texture error: {0}")]
     Texture(#[from] TextureError),
+
+    #[error("level mesh error: {0}")]
+    LevelMesh(#[from] LevelMeshError),
 }
