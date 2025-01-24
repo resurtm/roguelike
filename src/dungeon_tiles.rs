@@ -2,7 +2,7 @@ use crate::types::LevelBlock as LB;
 use cgmath::Point2;
 
 #[derive(Clone, PartialEq)]
-pub(crate) enum DungeonTile {
+pub enum DungeonTile {
     TopLeftCorner,
     TopRightCorner,
     BottomRightCorner,
@@ -73,7 +73,7 @@ pub(crate) enum DungeonTile {
 }
 
 impl DungeonTile {
-    pub(crate) fn get_tex_pos(dt: &DungeonTile) -> Point2<u32> {
+    pub fn get_tex_pos(dt: &DungeonTile) -> Point2<u32> {
         match dt {
             DungeonTile::TopLeftCorner => Point2::new(0, 0),
             DungeonTile::TopRightCorner => Point2::new(5, 0),
@@ -140,7 +140,7 @@ impl DungeonTile {
         }
     }
 
-    pub(crate) fn map_level_blocks_to_tiles(blocks: &[Vec<LB>]) -> Vec<Vec<DungeonTile>> {
+    pub fn map_level_blocks_to_tiles(blocks: &[Vec<LB>]) -> Vec<Vec<DungeonTile>> {
         let w = blocks.len();
         let h = blocks[0].len();
 

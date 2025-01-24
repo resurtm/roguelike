@@ -1,5 +1,6 @@
 use crate::{
     consts::WINDOW_SIZE,
+    level::Level,
     level_mesh::{LevelMesh, LevelMeshError},
 };
 use cgmath::{ortho, Matrix4, Point2, Point3, SquareMatrix, Vector3};
@@ -164,7 +165,7 @@ impl Observer {
         Self {
             eye: Point3::new(0.0, 1.0, 0.0),
             target: Point3::new(0.0, 0.0, 0.0),
-            up: Vector3::unit_z(),
+            up: -Vector3::unit_z(),
 
             left: -((WINDOW_SIZE.0 / 2 / PIXELS_PER_TILE) as f32),
             right: (WINDOW_SIZE.0 / 2 / PIXELS_PER_TILE) as f32,
@@ -347,7 +348,8 @@ impl<'a> VideoState<'a> {
 
         let observer_group = ObserverGroup::new(&device);
 
-        let level_mesh = LevelMesh::new(&device, &queue)?;
+        let level = Level::new();
+        let level_mesh = LevelMesh::new(&device, &queue, &level)?;
         let level_mesh_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("level_mesh_buffer"),
             size: std::mem::size_of::<[MatrixUniform; 1]>() as u64,
@@ -522,11 +524,12 @@ impl<'a> VideoState<'a> {
             );
 
             let m = MatrixUniform {
-                mat: Matrix4::from_translation((10.0f32, 0.0f32, 0.0f32).into()).into(),
+                // mat: Matrix4::from_translation((10.0f32, 0.0f32, 0.0f32).into()).into(),
+                mat: Matrix4::from_translation((-10.0f32, 0.0f32, -7.5f32).into()).into(),
             };
             render_pass.set_bind_group(2, &self.level_mesh_bind_group, &[]);
             self.queue.write_buffer(&self.level_mesh_buffer, 0, bytemuck::cast_slice(&m.mat));
-            render_pass.draw_indexed(0..6, 4 * 10, 0..1);
+            render_pass.draw_indexed(0..self.level_mesh.num_indices, 0, 0..1);
 
             let m = MatrixUniform {
                 mat: Matrix4::from_translation((-10.0f32, 0.0f32, 0.0f32).into()).into(),
