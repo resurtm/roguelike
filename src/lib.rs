@@ -1,4 +1,5 @@
 pub(crate) mod aabb;
+pub mod app;
 pub(crate) mod camera;
 pub(crate) mod consts;
 pub(crate) mod direct_media;
@@ -11,7 +12,8 @@ pub(crate) mod level_mesh;
 pub mod main_loop;
 pub(crate) mod player;
 pub(crate) mod player_sprite;
+pub(crate) mod scene;
 pub(crate) mod textures;
 pub(crate) mod types;
 pub(crate) mod video;
-pub mod window;
+pub(crate) mod window;

@@ -30,7 +30,7 @@ impl<'a> LevelDisplay<'a> {
         level: &Level,
         textures: &'a Textures,
     ) -> Result<(), LevelDisplayError> {
-        self.tiles = DungeonTile::map_level_blocks_to_tiles(&level.map);
+        self.tiles = DungeonTile::map_level_blocks_to_tiles(&level.blocks);
         self.tex_dungeon = Some(
             textures
                 .get(&TextureID::DungeonTileset)

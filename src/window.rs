@@ -1,6 +1,6 @@
 use crate::{
     consts::{WINDOW_SIZE, WINDOW_TITLE},
-    video::{VideoState, VideoStateError},
+    video::{Video, VideoError},
 };
 use std::sync::Arc;
 use thiserror::Error;
@@ -13,9 +13,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-pub async fn run() -> Result<(), RunError> {
-    env_logger::init();
-
+pub async fn create_and_run() -> Result<(), RunError> {
     let event_loop = EventLoop::new()?;
     let window = Arc::new(
         WindowBuilder::new()
@@ -24,7 +22,7 @@ pub async fn run() -> Result<(), RunError> {
             .with_title(WINDOW_TITLE)
             .build(&event_loop)?,
     );
-    let mut video_state = VideoState::new(Arc::clone(&window)).await?;
+    let mut video = Video::new(Arc::clone(&window)).await?;
     let mut surface_ready = false;
 
     event_loop.run(move |event, control_flow| match event {
@@ -41,7 +39,7 @@ pub async fn run() -> Result<(), RunError> {
             } => control_flow.exit(),
 
             WindowEvent::Resized(physical_size) => {
-                video_state.resize(*physical_size);
+                video.handle_resize(*physical_size);
                 surface_ready = true;
             }
 
@@ -50,10 +48,10 @@ pub async fn run() -> Result<(), RunError> {
                 if !surface_ready {
                     return;
                 }
-                match video_state.render() {
+                match video.render() {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-                        video_state.resize(window.inner_size());
+                        video.handle_resize(window.inner_size());
                     }
                     Err(wgpu::SurfaceError::OutOfMemory) => {
                         log::error!("OutOfMemory");
@@ -82,6 +80,6 @@ pub enum RunError {
     #[error("os error: {0}")]
     Os(#[from] OsError),
 
-    #[error("video state error: {0}")]
-    VideoState(#[from] VideoStateError),
+    #[error("video error: {0}")]
+    Video(#[from] VideoError),
 }

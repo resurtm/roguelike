@@ -37,7 +37,7 @@ impl<'b> MainLoop<'b> {
 
         let level = Level::new();
         let level_display = LevelDisplay::new();
-        let level_collision = LevelCollision::new(&level.map);
+        let level_collision = LevelCollision::new(&level.blocks);
 
         Ok(MainLoop {
             direct_media,

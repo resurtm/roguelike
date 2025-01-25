@@ -1,18 +1,18 @@
 use cgmath::{AbsDiffEq, InnerSpace, Point2, RelativeEq, Vector2};
 
-pub(crate) struct Aabb {
-    pub(crate) min: Point2<f64>,
-    pub(crate) max: Point2<f64>,
+pub struct Aabb {
+    pub min: Point2<f32>,
+    pub max: Point2<f32>,
 }
 
 impl Aabb {
-    pub(crate) fn new(min: Point2<f64>, max: Point2<f64>) -> Self {
+    pub fn new(min: Point2<f32>, max: Point2<f32>) -> Self {
         Self { min, max }
     }
 
-    pub(crate) fn check_contact(&self, other: &Self) -> AabbContact {
+    pub fn check_contact(&self, other: &Self) -> AabbContact {
         // mtv == minimum translation vector
-        let mut mtv_dist = f64::MAX;
+        let mut mtv_dist = f32::MAX;
         let mut mtv_axis = Vector2::new(0.0, 0.0);
 
         // axes of potential separation
@@ -48,18 +48,18 @@ impl Aabb {
         let normal = mtv_axis.normalize();
         // multiply the penetration depth by itself plus a small increment
         // when the penetration is resolved using the mtv, it will no longer intersect
-        let penetration = f64::sqrt(mtv_dist) * 1.001;
+        let penetration = f32::sqrt(mtv_dist) * 1.001;
         AabbContact::new(penetration, normal)
     }
 
     fn check_sat_axis(
-        axis: Vector2<f64>,
-        min_a: f64,
-        max_a: f64,
-        min_b: f64,
-        max_b: f64,
-        mtv_axis: &mut Vector2<f64>,
-        mtv_dist: &mut f64,
+        axis: Vector2<f32>,
+        min_a: f32,
+        max_a: f32,
+        min_b: f32,
+        max_b: f32,
+        mtv_axis: &mut Vector2<f32>,
+        mtv_dist: &mut f32,
     ) -> bool {
         // Separating Axis Theorem (SAT):
         // - two convex shapes only overlap if they overlap on all axes of separation
@@ -106,27 +106,27 @@ impl Aabb {
 }
 
 #[derive(PartialEq, Debug)]
-pub(crate) struct AabbContact {
-    pub(crate) intersects: bool,
-    pub(crate) penetration: f64,
-    pub(crate) min_trans: Vector2<f64>,
+pub struct AabbContact {
+    pub intersects: bool,
+    pub penetration: f32,
+    pub min_trans: Vector2<f32>,
 }
 
 impl AabbContact {
-    pub(crate) fn empty() -> Self {
+    pub fn empty() -> Self {
         Self { intersects: false, penetration: 0.0, min_trans: Vector2::new(0.0, 0.0) }
     }
 
-    pub(crate) fn new(penetration: f64, min_trans: Vector2<f64>) -> Self {
+    pub fn new(penetration: f32, min_trans: Vector2<f32>) -> Self {
         Self { intersects: true, penetration, min_trans }
     }
 }
 
 impl AbsDiffEq for AabbContact {
-    type Epsilon = f64;
+    type Epsilon = f32;
 
     fn default_epsilon() -> Self::Epsilon {
-        f64::EPSILON
+        f32::EPSILON
     }
 
     fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
@@ -138,7 +138,7 @@ impl AbsDiffEq for AabbContact {
 
 impl RelativeEq for AabbContact {
     fn default_max_relative() -> Self::Epsilon {
-        f64::EPSILON
+        f32::EPSILON
     }
 
     fn relative_eq(

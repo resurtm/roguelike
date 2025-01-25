@@ -295,7 +295,7 @@ struct MatrixUniform {
     mat: [[f32; 4]; 4],
 }
 
-pub(crate) struct VideoState<'a> {
+pub(crate) struct Video<'a> {
     #[allow(dead_code)]
     instance: wgpu::Instance,
     #[allow(dead_code)]
@@ -315,8 +315,8 @@ pub(crate) struct VideoState<'a> {
     level_mesh_bind_group_other: wgpu::BindGroup,
 }
 
-impl<'a> VideoState<'a> {
-    pub(crate) async fn new(window: Arc<Window>) -> Result<VideoState<'a>, VideoStateError> {
+impl<'a> Video<'a> {
+    pub(crate) async fn new(window: Arc<Window>) -> Result<Video<'a>, VideoError> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -332,7 +332,7 @@ impl<'a> VideoState<'a> {
                 force_fallback_adapter: false,
             })
             .await
-            .ok_or(VideoStateError::RequestAdapter())?;
+            .ok_or(VideoError::RequestAdapter())?;
 
         let (device, queue) = adapter
             .request_device(
@@ -477,7 +477,7 @@ impl<'a> VideoState<'a> {
         })
     }
 
-    pub(crate) fn resize(&mut self, size: winit::dpi::PhysicalSize<u32>) {
+    pub(crate) fn handle_resize(&mut self, size: winit::dpi::PhysicalSize<u32>) {
         if size.width > 0 && size.height > 0 {
             self.config.width = size.width;
             self.config.height = size.height;
@@ -547,7 +547,7 @@ impl<'a> VideoState<'a> {
 }
 
 #[derive(Error, Debug)]
-pub enum VideoStateError {
+pub enum VideoError {
     #[error("create surface error: {0}")]
     CreateSurface(#[from] CreateSurfaceError),
 

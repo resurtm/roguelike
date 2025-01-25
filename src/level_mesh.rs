@@ -42,7 +42,7 @@ impl LevelMesh {
     }
 
     fn build_vertices(level: &Level) -> (Vec<Vertex>, u32) {
-        let tiles = DungeonTile::map_level_blocks_to_tiles(&level.map);
+        let tiles = DungeonTile::map_level_blocks_to_tiles(&level.blocks);
         let (mut vertices, mut num_vertices) = (vec![], 0);
         for (x, its) in tiles.iter().enumerate() {
             for (y, it) in its.iter().enumerate() {
