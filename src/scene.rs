@@ -1,5 +1,7 @@
 pub struct Scene {}
 
 impl Scene {
-    fn new() -> Self {}
+    fn new() -> Self {
+        Self {}
+    }
 }

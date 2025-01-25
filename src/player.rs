@@ -1,4 +1,4 @@
-use crate::{aabb::Aabb, consts::START_POSITION, input::Input, level_collision::LevelCollision};
+use crate::{consts::START_POSITION, input::Input};
 use cgmath::{Point2, Vector2};
 
 pub(crate) struct Player {
@@ -58,18 +58,18 @@ impl Player {
         }
     }
 
-    pub(crate) fn sync_level_collision(&mut self, col: &LevelCollision) {
-        let p = Aabb::new(
-            Point2::new(self.position.x - 96.0 / 4.0, self.position.y - 96.0 / 4.0),
-            Point2::new(self.position.x + 96.0 / 4.0, self.position.y + 96.0 / 4.0),
-        );
-
-        col.aabbs.iter().for_each(|aabb| {
-            let cont = aabb.check_contact(&p);
-            if cont.intersects {
-                let offset = cont.min_trans * cont.penetration;
-                self.position -= Vector2::new(offset.x, offset.y);
-            }
-        });
-    }
+    // pub(crate) fn sync_level_collision(&mut self, col: &crate::level::Collision) {
+    //     let p = Aabb::new(
+    //         Point2::new(self.position.x - 96.0 / 4.0, self.position.y - 96.0 / 4.0),
+    //         Point2::new(self.position.x + 96.0 / 4.0, self.position.y + 96.0 / 4.0),
+    //     );
+    //
+    //     col.aabbs.iter().for_each(|aabb| {
+    //         let cont = aabb.check_contact(&p);
+    //         if cont.intersects {
+    //             let offset = cont.min_trans * cont.penetration;
+    //             self.position -= Vector2::new(offset.x, offset.y);
+    //         }
+    //     });
+    // }
 }
