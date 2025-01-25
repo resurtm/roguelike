@@ -1,7 +1,13 @@
+use crate::video::{TextureGroup, Vertex};
 use crate::{aabb::Aabb, consts::TILE_SIZE};
 use cgmath::Point2;
 use std::collections::HashSet;
 use thiserror::Error;
+use wgpu::util::DeviceExt;
+
+// --------------------------------------------------
+// --- BLOCKS ---
+// --------------------------------------------------
 
 type Blocks = Vec<Vec<Block>>;
 
@@ -11,6 +17,10 @@ pub enum Block {
     Wall,
     Void,
 }
+
+// --------------------------------------------------
+// --- LEVEL ---
+// --------------------------------------------------
 
 pub struct Level {
     blocks: Blocks,
@@ -48,6 +58,10 @@ pub enum LevelError {
     #[error("read blocks error: {0}")]
     ReadBlocks(#[from] std::io::Error),
 }
+
+// --------------------------------------------------
+// --- COLLISION ---
+// --------------------------------------------------
 
 pub struct Collision {
     aabbs: Vec<Aabb>,
@@ -143,6 +157,10 @@ impl Collision {
         true
     }
 }
+
+// --------------------------------------------------
+// --- DUNGEON TILE ---
+// --------------------------------------------------
 
 type DungeonTiles = Vec<Vec<DungeonTile>>;
 
@@ -363,11 +381,11 @@ impl DungeonTile {
     fn pass1(dungeon_tiles: &DungeonTiles, point: Point2<usize>) -> Self {
         let x = Self::directions(dungeon_tiles, point, Self::Void).0;
         match x {
-            Self::Flat => FLAT_DUNGEON_TILE_LOOKUP[point.x % 4 + point.y % 3 * 3],
-            Self::WallTop => WALL_TOP_DUNGEON_TILE_LOOKUP[point.x % 4],
-            Self::WallBottom => WALL_BOTTOM_DUNGEON_TILE_LOOKUP[point.x % 4],
-            Self::WallLeft => WALL_LEFT_DUNGEON_TILE_LOOKUP[point.y % 3],
-            Self::WallRight => WALL_RIGHT_DUNGEON_TILE_LOOKUP[point.y % 3],
+            Self::Flat => DUNGEON_TILE_FLAT_LOOKUP[point.x % 4 + point.y % 3 * 3],
+            Self::WallTop => DUNGEON_TILE_WALL_TOP_LOOKUP[point.x % 4],
+            Self::WallBottom => DUNGEON_TILE_WALL_BOTTOM_LOOKUP[point.x % 4],
+            Self::WallLeft => DUNGEON_TILE_WALL_LEFT_LOOKUP[point.y % 3],
+            Self::WallRight => DUNGEON_TILE_WALL_RIGHT_LOOKUP[point.y % 3],
             _ => x,
         }
     }
@@ -429,11 +447,11 @@ impl DungeonTile {
 
     /// Internal helper for [`pass2`].
     fn is_flat(t: &DungeonTile) -> bool {
-        FLAT_DUNGEON_TILE_LOOKUP.contains(t) || FLAT_WALL_DUNGEON_TILE_LOOKUP.contains(t)
+        DUNGEON_TILE_FLAT_LOOKUP.contains(t) || DUNGEON_TILE_FLAT_WALL_LOOKUP.contains(t)
     }
 }
 
-const FLAT_DUNGEON_TILE_LOOKUP: [DungeonTile; 12] = [
+const DUNGEON_TILE_FLAT_LOOKUP: [DungeonTile; 12] = [
     // row 0
     DungeonTile::Flat0, // 0x0
     DungeonTile::Flat1, // 1x0
@@ -450,7 +468,7 @@ const FLAT_DUNGEON_TILE_LOOKUP: [DungeonTile; 12] = [
     DungeonTile::Flat10, // 2x2
     DungeonTile::Flat11, // 3x2
 ];
-const FLAT_WALL_DUNGEON_TILE_LOOKUP: [DungeonTile; 12] = [
+const DUNGEON_TILE_FLAT_WALL_LOOKUP: [DungeonTile; 12] = [
     // row 0
     DungeonTile::Flat0Wall, // 0x0
     DungeonTile::Flat1Wall, // 1x0
@@ -467,28 +485,135 @@ const FLAT_WALL_DUNGEON_TILE_LOOKUP: [DungeonTile; 12] = [
     DungeonTile::Flat10Wall, // 2x2
     DungeonTile::Flat11Wall, // 3x2
 ];
-const WALL_TOP_DUNGEON_TILE_LOOKUP: [DungeonTile; 4] = [
+const DUNGEON_TILE_WALL_TOP_LOOKUP: [DungeonTile; 4] = [
     DungeonTile::WallTop0, // 1x0
     DungeonTile::WallTop1, // 2x0
     DungeonTile::WallTop2, // 3x0
     DungeonTile::WallTop3, // 4x0
 ];
-const WALL_BOTTOM_DUNGEON_TILE_LOOKUP: [DungeonTile; 4] = [
+const DUNGEON_TILE_WALL_BOTTOM_LOOKUP: [DungeonTile; 4] = [
     DungeonTile::WallBottom0, // 1x4
     DungeonTile::WallBottom1, // 2x4
     DungeonTile::WallBottom2, // 3x4
     DungeonTile::WallBottom3, // 4x4
 ];
-const WALL_LEFT_DUNGEON_TILE_LOOKUP: [DungeonTile; 3] = [
+const DUNGEON_TILE_WALL_LEFT_LOOKUP: [DungeonTile; 3] = [
     DungeonTile::WallLeft0, // 0x1
     DungeonTile::WallLeft1, // 0x2
     DungeonTile::WallLeft2, // 0x3
 ];
-const WALL_RIGHT_DUNGEON_TILE_LOOKUP: [DungeonTile; 3] = [
+const DUNGEON_TILE_WALL_RIGHT_LOOKUP: [DungeonTile; 3] = [
     DungeonTile::WallRight0, // 5x1
     DungeonTile::WallRight1, // 5x2
     DungeonTile::WallRight2, // 5x3
 ];
+
+// --------------------------------------------------
+// --- MESH ---
+// --------------------------------------------------
+
+struct Mesh {
+    texture: TextureGroup,
+
+    vertex_buffer: wgpu::Buffer,
+    #[allow(dead_code)]
+    vertex_count: u32,
+
+    index_buffer: wgpu::Buffer,
+    index_count: u32,
+}
+
+impl Mesh {
+    /// Create a new instance of level mesh.
+    pub fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        dungeon_tiles: &DungeonTiles,
+    ) -> Result<Self, MeshError> {
+        let texture = TextureGroup::new(
+            device,
+            queue,
+            include_bytes!("../assets/dungeon/Dungeon_Tileset.png"),
+        )?;
+
+        let (vertices, vertex_count) = Self::build_vertices(dungeon_tiles);
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("level_mesh_vertex_buffer"),
+            contents: bytemuck::cast_slice(&vertices),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
+        let (indices, index_count) = Self::build_indices(vertex_count);
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("level_mesh_index_buffer"),
+            contents: bytemuck::cast_slice(&indices),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+
+        Ok(Self { texture, vertex_buffer, vertex_count, index_buffer, index_count })
+    }
+
+    /// Build vertices vector to be used to create a new vertex buffer.
+    /// Internal helper for [`new`].
+    fn build_vertices(dungeon_tiles: &DungeonTiles) -> (Vec<Vertex>, u32) {
+        let (m, n) = (MESH_TEXTURE_SIZE as f32, MESH_TEXTURE_TILE_SIZE as f32);
+        let (mut vertices, mut vertex_count) = (vec![], 0);
+        for (x, its) in dungeon_tiles.iter().enumerate() {
+            for (y, it) in its.iter().enumerate() {
+                let (x, y) = (x as f32, y as f32);
+                let (u, v) = DungeonTile::get_texture_position(it).into();
+                let (u, v) = (u as f32, v as f32);
+                vertices.push(Vertex::new(
+                    (x - MESH_XZ_COORD, MESH_Y_COORD, y - MESH_XZ_COORD).into(),
+                    ((n * u) / m, n * v / m).into(),
+                ));
+                vertices.push(Vertex::new(
+                    (x - MESH_XZ_COORD, MESH_Y_COORD, y + MESH_XZ_COORD).into(),
+                    ((n * u) / m, (n * (v + 1.0)) / n).into(),
+                ));
+                vertices.push(Vertex::new(
+                    (x + MESH_XZ_COORD, MESH_Y_COORD, y + MESH_XZ_COORD).into(),
+                    ((n * (u + 1.0)) / n, (n * (v + 1.0)) / n).into(),
+                ));
+                vertices.push(Vertex::new(
+                    (x + MESH_XZ_COORD, MESH_Y_COORD, y - MESH_XZ_COORD).into(),
+                    ((n * (u + 1.0)) / m, (n * v) / m).into(),
+                ));
+                vertex_count += MESH_VERTICES_PER_TILE;
+            }
+        }
+        (vertices, vertex_count)
+    }
+
+    /// Build indices vector to be used to create a new index buffer.
+    /// Internal helper for [`new`].
+    fn build_indices(vertex_count: u32) -> (Vec<u16>, u32) {
+        let (mut indices, mut index_count) = (vec![], 0);
+        for i in 0..(vertex_count / MESH_VERTICES_PER_TILE) as u16 {
+            let t = [0, 2, 3, 0, 1, 2].iter().map(|x| *x + i * MESH_VERTICES_PER_TILE as u16);
+            indices.extend(t);
+            index_count += MESH_INDICES_PER_TILE;
+        }
+        (indices, index_count)
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum MeshError {
+    #[error("texture error: {0}")]
+    Texture(#[from] crate::video::TextureError),
+}
+
+const MESH_XZ_COORD: f32 = 0.5;
+const MESH_Y_COORD: f32 = -0.5;
+const MESH_TEXTURE_SIZE: u32 = 160;
+const MESH_TEXTURE_TILE_SIZE: u32 = 16;
+const MESH_VERTICES_PER_TILE: u32 = 4;
+const MESH_INDICES_PER_TILE: u32 = 6;
+
+// --------------------------------------------------
+// --- TEST ---
+// --------------------------------------------------
 
 #[cfg(test)]
 mod tests {
