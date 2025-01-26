@@ -1,4 +1,4 @@
-use crate::{consts::WINDOW_SIZE, scene};
+use crate::consts::WINDOW_SIZE;
 use cgmath::{ortho, Matrix4, Point2, Point3, SquareMatrix, Vector3};
 use image::{GenericImageView, ImageError};
 use std::{iter, sync::Arc};
@@ -466,10 +466,10 @@ impl<'a> Video<'a> {
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
                             // const BG_COLOR: (u8, u8, u8) = (37, 19, 26);
-                            r: 37.0 / 255.0,
-                            g: 19.0 / 255.0,
-                            b: 26.0 / 255.0,
-                            a: 1.00,
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
                         }),
                         store: wgpu::StoreOp::Store,
                     },
@@ -497,29 +497,6 @@ impl<'a> Video<'a> {
             self.queue.write_buffer(&scene.level.mesh.buffer, 0, bytemuck::cast_slice(&m.mat));
 
             render_pass.draw_indexed(0..scene.level.mesh.index_count, 0, 0..1);
-
-            // render_pass.set_bind_group(0, &self.level_mesh.texture_group.bind_group, &[]);
-            // render_pass.set_bind_group(1, &self.observer_group.bind_group, &[]);
-            // render_pass.set_vertex_buffer(0, self.level_mesh.vertex_buffer.slice(..));
-            // render_pass.set_index_buffer(
-            //     self.level_mesh.index_buffer.slice(..),
-            //     wgpu::IndexFormat::Uint16,
-            // );
-            //
-            // let m = MatrixUniform {
-            //     // mat: Matrix4::from_translation((10.0f32, 0.0f32, 0.0f32).into()).into(),
-            //     mat: Matrix4::from_translation((-10.0f32, 0.0f32, -7.5f32).into()).into(),
-            // };
-            // render_pass.set_bind_group(2, &self.level_mesh_bind_group, &[]);
-            // self.queue.write_buffer(&self.level_mesh_buffer, 0, bytemuck::cast_slice(&m.mat));
-            // render_pass.draw_indexed(0..self.level_mesh.num_indices, 0, 0..1);
-            //
-            // let m = MatrixUniform {
-            //     mat: Matrix4::from_translation((-10.0f32, 0.0f32, 0.0f32).into()).into(),
-            // };
-            // render_pass.set_bind_group(2, &self.level_mesh_bind_group_other, &[]);
-            // self.queue.write_buffer(&self.level_mesh_buffer_other, 0, bytemuck::cast_slice(&m.mat));
-            // render_pass.draw_indexed(0..6, 4 * 9, 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
@@ -542,6 +519,4 @@ pub enum VideoError {
 
     #[error("texture error: {0}")]
     Texture(#[from] TextureError),
-    // #[error("level mesh error: {0}")]
-    // LevelMesh(#[from] LevelMeshError),
 }

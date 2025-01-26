@@ -1,7 +1,6 @@
 use crate::{
     consts::{WINDOW_SIZE, WINDOW_TITLE},
-    scene,
-    video::{self, VideoError},
+    video::VideoError,
 };
 use std::sync::Arc;
 use thiserror::Error;
@@ -14,7 +13,7 @@ use winit::{
 };
 
 // Game application main entry point.
-pub async fn launch() -> Result<(), RunError> {
+pub async fn launch() -> Result<(), LaunchError> {
     env_logger::init();
 
     let event_loop = winit::event_loop::EventLoop::new()?;
@@ -30,9 +29,6 @@ pub async fn launch() -> Result<(), RunError> {
     let mut surface_ready = false;
 
     let scene = crate::scene::Scene::new(&video)?;
-    // video.bind_group_layouts.push(&scene.observer.bind_group_layout);
-    // video.bind_group_layouts.push(&scene.level.mesh.texture.bind_group_layout);
-    // video.bind_group_layouts.push(&scene.level.mesh.bind_group_layout);
 
     event_loop.run(move |event, control_flow| match event {
         event::Event::WindowEvent { ref event, window_id } if window_id == window.id() => {
@@ -84,7 +80,7 @@ pub async fn launch() -> Result<(), RunError> {
 }
 
 #[derive(Error, Debug)]
-pub enum RunError {
+pub enum LaunchError {
     #[error("event loop error: {0}")]
     EventLoop(#[from] EventLoopError),
 
