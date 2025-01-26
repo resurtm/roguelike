@@ -494,11 +494,7 @@ impl<'a> Video<'a> {
                 // mat: Matrix4::from_translation((10.0f32, 0.0f32, 0.0f32).into()).into(),
                 mat: Matrix4::from_translation((-10.0f32, 0.0f32, -7.5f32).into()).into(),
             };
-            self.queue.write_buffer(
-                &scene.level.mesh.vertex_buffer,
-                0,
-                bytemuck::cast_slice(&m.mat),
-            );
+            self.queue.write_buffer(&scene.level.mesh.buffer, 0, bytemuck::cast_slice(&m.mat));
 
             render_pass.draw_indexed(0..scene.level.mesh.index_count, 0, 0..1);
 

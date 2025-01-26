@@ -1,6 +1,6 @@
 use crate::video::{TextureGroup, Vertex, Video};
 use crate::{aabb::Aabb, consts::TILE_SIZE};
-use cgmath::Point2;
+use cgmath::{Point2, Point3};
 use std::borrow::{Borrow, BorrowMut};
 use std::collections::HashSet;
 use thiserror::Error;
@@ -528,7 +528,7 @@ pub struct Mesh {
     pub index_buffer: wgpu::Buffer,
     pub index_count: u32,
 
-    buffer: wgpu::Buffer,
+    pub buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
 }
 
@@ -544,7 +544,7 @@ impl Mesh {
         let vertex_buffer = video.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("level_mesh_vertex_buffer"),
             contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::VERTEX,
         });
 
         // geometry -- indices
@@ -588,22 +588,39 @@ impl Mesh {
                 let (x, y) = (x as f32, y as f32);
                 let (u, v) = DungeonTile::get_texture_position(it).into();
                 let (u, v) = (u as f32, v as f32);
+                let (tx, ty) = (u as f32, v as f32);
                 vertices.push(Vertex::new(
-                    (x - MESH_XZ_COORD, MESH_Y_COORD, y - MESH_XZ_COORD).into(),
-                    ((n * u) / m, n * v / m).into(),
+                    Point3::new(x - 0.5, 0.0, y - 0.5),
+                    Point2::new((16.0 * tx) / 160.0, 16.0 * ty / 160.0),
                 ));
                 vertices.push(Vertex::new(
-                    (x - MESH_XZ_COORD, MESH_Y_COORD, y + MESH_XZ_COORD).into(),
-                    ((n * u) / m, (n * (v + 1.0)) / n).into(),
+                    Point3::new(x - 0.5, 0.0, y + 0.5),
+                    Point2::new((16.0 * tx) / 160.0, (16.0 * (ty + 1.0)) / 160.0),
                 ));
                 vertices.push(Vertex::new(
-                    (x + MESH_XZ_COORD, MESH_Y_COORD, y + MESH_XZ_COORD).into(),
-                    ((n * (u + 1.0)) / n, (n * (v + 1.0)) / n).into(),
+                    Point3::new(x + 0.5, 0.0, y + 0.5),
+                    Point2::new((16.0 * (tx + 1.0)) / 160.0, (16.0 * (ty + 1.0)) / 160.0),
                 ));
                 vertices.push(Vertex::new(
-                    (x + MESH_XZ_COORD, MESH_Y_COORD, y - MESH_XZ_COORD).into(),
-                    ((n * (u + 1.0)) / m, (n * v) / m).into(),
+                    Point3::new(x + 0.5, 0.0, y - 0.5),
+                    Point2::new((16.0 * (tx + 1.0)) / 160.0, (16.0 * ty) / 160.0),
                 ));
+                // vertices.push(Vertex::new(
+                //     (x - MESH_XZ_COORD, MESH_Y_COORD, y - MESH_XZ_COORD).into(),
+                //     ((n * u) / m, n * v / m).into(),
+                // ));
+                // vertices.push(Vertex::new(
+                //     (x - MESH_XZ_COORD, MESH_Y_COORD, y + MESH_XZ_COORD).into(),
+                //     ((n * u) / m, (n * (v + 1.0)) / n).into(),
+                // ));
+                // vertices.push(Vertex::new(
+                //     (x + MESH_XZ_COORD, MESH_Y_COORD, y + MESH_XZ_COORD).into(),
+                //     ((n * (u + 1.0)) / n, (n * (v + 1.0)) / n).into(),
+                // ));
+                // vertices.push(Vertex::new(
+                //     (x + MESH_XZ_COORD, MESH_Y_COORD, y - MESH_XZ_COORD).into(),
+                //     ((n * (u + 1.0)) / m, (n * v) / m).into(),
+                // ));
                 vertex_count += MESH_VERTICES_PER_TILE;
             }
         }
