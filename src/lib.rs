@@ -7,4 +7,3 @@ pub(crate) mod level;
 pub(crate) mod player;
 pub(crate) mod scene;
 pub(crate) mod video;
-pub(crate) mod window;

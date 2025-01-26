@@ -1,6 +1,7 @@
-use crate::video::{TextureGroup, Vertex};
+use crate::video::{TextureGroup, Vertex, Video};
 use crate::{aabb::Aabb, consts::TILE_SIZE};
 use cgmath::Point2;
+use std::borrow::{Borrow, BorrowMut};
 use std::collections::HashSet;
 use thiserror::Error;
 use wgpu::util::DeviceExt;
@@ -25,14 +26,16 @@ pub enum Block {
 pub struct Level {
     blocks: Blocks,
     collision: Collision,
+    pub mesh: Mesh,
 }
 
 impl Level {
     /// Create a new level instance.
-    pub fn new() -> Result<Self, LevelError> {
+    pub fn new(video: &Video) -> Result<Self, LevelError> {
         let blocks = Self::read_blocks("./assets/level0.txt")?;
         let collision = Collision::new(&blocks);
-        Ok(Self { blocks, collision })
+        let mesh = Mesh::new(video, &DungeonTile::map_blocks_to_dungeon_tiles(&blocks))?;
+        Ok(Self { blocks, collision, mesh })
     }
 
     /// Load level blocks from a file.
@@ -57,6 +60,9 @@ impl Level {
 pub enum LevelError {
     #[error("read blocks error: {0}")]
     ReadBlocks(#[from] std::io::Error),
+
+    #[error("mesh error: {0}")]
+    Mesh(#[from] MeshError),
 }
 
 // --------------------------------------------------
@@ -512,45 +518,64 @@ const DUNGEON_TILE_WALL_RIGHT_LOOKUP: [DungeonTile; 3] = [
 // --- MESH ---
 // --------------------------------------------------
 
-struct Mesh {
-    texture: TextureGroup,
+pub struct Mesh {
+    pub texture: TextureGroup,
 
-    vertex_buffer: wgpu::Buffer,
+    pub vertex_buffer: wgpu::Buffer,
     #[allow(dead_code)]
     vertex_count: u32,
 
-    index_buffer: wgpu::Buffer,
-    index_count: u32,
+    pub index_buffer: wgpu::Buffer,
+    pub index_count: u32,
+
+    buffer: wgpu::Buffer,
+    pub bind_group: wgpu::BindGroup,
 }
 
 impl Mesh {
     /// Create a new instance of level mesh.
-    pub fn new(
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        dungeon_tiles: &DungeonTiles,
-    ) -> Result<Self, MeshError> {
-        let texture = TextureGroup::new(
-            device,
-            queue,
-            include_bytes!("../assets/dungeon/Dungeon_Tileset.png"),
-        )?;
+    pub fn new(video: &Video, dungeon_tiles: &DungeonTiles) -> Result<Self, MeshError> {
+        // texture
+        let texture =
+            TextureGroup::new(video, include_bytes!("../assets/dungeon/Dungeon_Tileset.png"))?;
 
+        // geometry -- vertices
         let (vertices, vertex_count) = Self::build_vertices(dungeon_tiles);
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let vertex_buffer = video.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("level_mesh_vertex_buffer"),
             contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
+        // geometry -- indices
         let (indices, index_count) = Self::build_indices(vertex_count);
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let index_buffer = video.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("level_mesh_index_buffer"),
             contents: bytemuck::cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        Ok(Self { texture, vertex_buffer, vertex_count, index_buffer, index_count })
+        let buffer = video.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("level_mesh_buffer"),
+            size: std::mem::size_of::<[crate::video::MatrixUniform; 1]>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let bind_group = video.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("level_mesh_bind_group"),
+            layout: &video.bind_group_layouts[2],
+            entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
+        });
+
+        Ok(Self {
+            texture,
+            vertex_buffer,
+            vertex_count,
+            index_buffer,
+            index_count,
+            buffer,
+            bind_group,
+        })
     }
 
     /// Build vertices vector to be used to create a new vertex buffer.
