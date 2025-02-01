@@ -536,8 +536,11 @@ impl Mesh {
     /// Create a new instance of level mesh.
     pub fn new(video: &Video, dungeon_tiles: &DungeonTiles) -> Result<Self, MeshError> {
         // texture
-        let texture =
-            TextureGroup::new(video, include_bytes!("../assets/dungeon/Dungeon_Tileset.png"))?;
+        let texture = TextureGroup::new(
+            video,
+            include_bytes!("../assets/dungeon/Dungeon_Tileset.png"),
+            "dungeon",
+        )?;
 
         // geometry -- vertices
         let (vertices, vertex_count) = Self::build_vertices(dungeon_tiles);
@@ -555,6 +558,7 @@ impl Mesh {
             usage: wgpu::BufferUsages::INDEX,
         });
 
+        // WGPU buffer and bind group
         let buffer = video.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("level_mesh_buffer"),
             size: std::mem::size_of::<[crate::video::MatrixUniform; 1]>() as u64,

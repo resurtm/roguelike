@@ -27,7 +27,7 @@ impl Texture {
         label: &str,
     ) -> Result<Self, TextureError> {
         let image = image::load_from_memory(bytes)?;
-        Ok(Self::create_internal(device, queue, &image, Some(label)))
+        Ok(Self::create_internal(device, queue, &image, label))
     }
 
     /// Create a new texture from provided image.
@@ -38,22 +38,23 @@ impl Texture {
         image: &image::DynamicImage,
         label: &str,
     ) -> Self {
-        Self::create_internal(device, queue, image, Some(label))
+        Self::create_internal(device, queue, image, label)
     }
 
     fn create_internal(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         image: &image::DynamicImage,
-        label: Option<&str>,
+        label: &str,
     ) -> Self {
+        println!("{:#?}", image.dimensions());
         let size = wgpu::Extent3d {
             width: image.dimensions().0,
             height: image.dimensions().1,
             depth_or_array_layers: 1,
         };
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label,
+            label: Some(&format!("{}_texture", label)),
             size,
             mip_level_count: 1,
             sample_count: 1,
@@ -101,8 +102,8 @@ pub struct TextureGroup {
 }
 
 impl TextureGroup {
-    pub fn new(video: &Video, bytes: &[u8]) -> Result<Self, TextureError> {
-        let texture = Texture::from_bytes(&video.device, &video.queue, bytes, "texture")?;
+    pub fn new(video: &Video, bytes: &[u8], label: &str) -> Result<Self, TextureError> {
+        let texture = Texture::from_bytes(&video.device, &video.queue, bytes, label)?;
 
         let bind_group = video.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &video.bind_group_layouts[0],
@@ -116,7 +117,7 @@ impl TextureGroup {
                     resource: wgpu::BindingResource::Sampler(&texture.sampler),
                 },
             ],
-            label: Some("texture_bind_group"),
+            label: Some(&format!("{}_bind_group", label)),
         });
 
         Ok(Self { texture, bind_group })
@@ -423,7 +424,8 @@ impl<'a> Video<'a> {
                     entry_point: "fs_main",
                     targets: &[Some(wgpu::ColorTargetState {
                         format: self.config.format,
-                        blend: Some(wgpu::BlendState::REPLACE),
+                        // blend: Some(wgpu::BlendState::REPLACE),
+                        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                         write_mask: wgpu::ColorWrites::ALL,
                     })],
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
@@ -480,23 +482,35 @@ impl<'a> Video<'a> {
             });
 
             render_pass.set_pipeline(self.get_pipeline());
-
-            render_pass.set_bind_group(0, &scene.level.mesh.texture.bind_group, &[]);
             render_pass.set_bind_group(1, &scene.observer.bind_group, &[]);
+
+            // level
+            render_pass.set_bind_group(0, &scene.level.mesh.texture.bind_group, &[]);
             render_pass.set_bind_group(2, &scene.level.mesh.bind_group, &[]);
             render_pass.set_vertex_buffer(0, scene.level.mesh.vertex_buffer.slice(..));
             render_pass.set_index_buffer(
                 scene.level.mesh.index_buffer.slice(..),
                 wgpu::IndexFormat::Uint16,
             );
-
             let m = MatrixUniform {
-                // mat: Matrix4::from_translation((10.0f32, 0.0f32, 0.0f32).into()).into(),
                 mat: Matrix4::from_translation((-10.0f32, 0.0f32, -7.5f32).into()).into(),
             };
             self.queue.write_buffer(&scene.level.mesh.buffer, 0, bytemuck::cast_slice(&m.mat));
-
             render_pass.draw_indexed(0..scene.level.mesh.index_count, 0, 0..1);
+
+            // player
+            render_pass.set_bind_group(0, &scene.player.mesh.textures[3].bind_group, &[]);
+            render_pass.set_bind_group(2, &scene.player.mesh.bind_group, &[]);
+            render_pass.set_vertex_buffer(0, scene.player.mesh.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(
+                scene.player.mesh.index_buffer.slice(..),
+                wgpu::IndexFormat::Uint16,
+            );
+            let m = MatrixUniform {
+                mat: Matrix4::from_translation((-5.0f32, 0.0f32, -5.0f32).into()).into(),
+            };
+            self.queue.write_buffer(&scene.player.mesh.buffer, 0, bytemuck::cast_slice(&m.mat));
+            render_pass.draw_indexed(0..6, 0, 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));

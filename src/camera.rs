@@ -1,4 +1,4 @@
-use crate::{consts::START_POSITION, input::Input, player::Player};
+use crate::{consts::START_POSITION, input::Input, player::PlayerOld};
 use cgmath::{InnerSpace, MetricSpace, Point2};
 
 pub(crate) struct Camera {
@@ -25,7 +25,7 @@ impl Camera {
         }
     }
 
-    pub(crate) fn follow_player(&mut self, player: &Player) {
+    pub(crate) fn follow_player(&mut self, player: &PlayerOld) {
         if self.position.distance(player.position) > CAMERA_FOLLOW_THRESHOLD {
             let dir = (player.position - self.position).normalize();
             self.position += dir * CAMERA_FOLLOW_SPEED;
@@ -44,7 +44,7 @@ mod tests {
         camera::{CAMERA_FOLLOW_THRESHOLD, CAMERA_MANUAL_SPEED},
         consts::START_POSITION,
         input::Input,
-        player::Player,
+        player::PlayerOld,
     };
     use cgmath::{assert_relative_eq, ElementWise, Point2};
 
@@ -86,7 +86,7 @@ mod tests {
         let mut camera = Camera::new();
         assert_relative_eq!(camera.position, start_position);
 
-        let mut player = Player::new();
+        let mut player = PlayerOld::new();
         player.position = start_position.add_element_wise(CAMERA_FOLLOW_THRESHOLD * 1.5);
 
         camera.follow_player(&player);
@@ -103,7 +103,7 @@ mod tests {
         let mut camera = Camera::new();
         assert_relative_eq!(camera.position, start_position);
 
-        let mut player = Player::new();
+        let mut player = PlayerOld::new();
         player.position = start_position.add_element_wise(CAMERA_FOLLOW_THRESHOLD * 0.5);
 
         camera.follow_player(&player);
