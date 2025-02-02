@@ -254,7 +254,7 @@ impl Vertex {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct MatrixUniform {
-    mat: [[f32; 4]; 4],
+    pub mat: [[f32; 4]; 4],
 }
 
 pub struct Video<'a> {
@@ -499,18 +499,7 @@ impl<'a> Video<'a> {
             render_pass.draw_indexed(0..scene.level.mesh.index_count, 0, 0..1);
 
             // player
-            render_pass.set_bind_group(0, &scene.player.mesh.textures[3].bind_group, &[]);
-            render_pass.set_bind_group(2, &scene.player.mesh.bind_group, &[]);
-            render_pass.set_vertex_buffer(0, scene.player.mesh.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(
-                scene.player.mesh.index_buffer.slice(..),
-                wgpu::IndexFormat::Uint16,
-            );
-            let m = MatrixUniform {
-                mat: Matrix4::from_translation((-5.0f32, 0.0f32, -5.0f32).into()).into(),
-            };
-            self.queue.write_buffer(&scene.player.mesh.buffer, 0, bytemuck::cast_slice(&m.mat));
-            render_pass.draw_indexed(0..6, 0, 0..1);
+            scene.player.mesh.render(&mut render_pass, &self.queue);
         }
 
         self.queue.submit(iter::once(encoder.finish()));

@@ -113,12 +113,13 @@ pub struct State {}
 pub struct Mesh {
     pub textures: [video::TextureGroup; MESH_TEXTURE_COUNT],
 
-    pub vertex_buffer: wgpu::Buffer,
+    pub vertex_buffer: Vec<wgpu::Buffer>,
     #[allow(dead_code)]
-    vertex_count: u32,
+    vertex_count: Vec<u32>,
 
-    pub index_buffer: wgpu::Buffer,
-    pub index_count: u32,
+    pub index_buffer: Vec<wgpu::Buffer>,
+    #[allow(dead_code)]
+    pub index_count: Vec<u32>,
 
     pub buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
@@ -128,7 +129,7 @@ impl Mesh {
     pub fn new(video: &video::Video) -> Result<Self, MeshError> {
         // textures
         let mut textures = vec![];
-        for (id, sub_path) in MESH_TEXTURE_ID_LOOKUP.iter() {
+        for (id, sub_path, _, _) in MESH_TEXTURE_ID_LOOKUP.iter() {
             textures.push(video::TextureGroup::new(
                 video,
                 &std::fs::read(format!("{}{}", MESH_TEXTURE_PATH_PREFIX, sub_path))
@@ -139,20 +140,30 @@ impl Mesh {
         let textures = textures.try_into().map_err(|_| MeshError::ReadConvert)?;
 
         // geometry -- vertices
-        let (vertices, vertex_count) = Self::build_vertices();
-        let vertex_buffer = video.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("player_mesh_vertex_buffer"),
-            contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+        let (mut vertex_buffer, mut vertex_count) = (vec![], vec![]);
+        for (idx, &k) in [8, 6, 4].iter().enumerate() {
+            let (vs, vsc) = Self::build_vertices(k);
+            vertex_buffer.push(video.device.create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
+                    label: Some(&format!("player_mesh_vertex_buffer_{}", idx)),
+                    contents: bytemuck::cast_slice(&vs),
+                    usage: wgpu::BufferUsages::VERTEX,
+                },
+            ));
+            vertex_count.push(vsc);
+        }
 
         // geometry -- indices
-        let (indices, index_count) = Self::build_indices(vertex_count);
-        let index_buffer = video.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("player_mesh_index_buffer"),
-            contents: bytemuck::cast_slice(&indices),
-            usage: wgpu::BufferUsages::INDEX,
-        });
+        let (mut index_buffer, mut index_count) = (vec![], vec![]);
+        for (idx, &vsc) in vertex_count.iter().enumerate() {
+            let (is, isc) = Self::build_indices(vsc);
+            index_buffer.push(video.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("player_mesh_index_buffer_{}", idx)),
+                contents: bytemuck::cast_slice(&is),
+                usage: wgpu::BufferUsages::INDEX,
+            }));
+            index_count.push(isc);
+        }
 
         // WGPU buffer and bind group
         let buffer = video.device.create_buffer(&wgpu::BufferDescriptor {
@@ -180,33 +191,32 @@ impl Mesh {
 
     /// Build vertices vector to be used to create a new vertex buffer.
     /// Internal helper for [`new`].
-    fn build_vertices() -> (Vec<crate::video::Vertex>, u32) {
+    fn build_vertices(k: u32) -> (Vec<crate::video::Vertex>, u32) {
         let s = MESH_TEXTURE_TILE_SIZE as f32;
-        let (m, n) = (MESH_TEXTURE_WIDTH as f32 * s, MESH_TEXTURE_HEIGHT as f32 * s);
+        let (w, h) = (k as f32 * s, MESH_TEXTURE_HEIGHT as f32 * s);
         let (mut vertices, mut vertex_count) = (vec![], 0);
-        for x in 0..MESH_TEXTURE_WIDTH {
+        for x in 0..k {
             for y in 0..MESH_TEXTURE_HEIGHT {
                 let (x, y) = (x as f32, y as f32);
                 vertices.push(crate::video::Vertex::new(
                     (-MESH_XZ_COORD, MESH_Y_COORD, -MESH_XZ_COORD).into(),
-                    ((s * x) / m, (s * y) / n).into(),
+                    ((s * x) / w, (s * y) / h).into(),
                 ));
                 vertices.push(crate::video::Vertex::new(
                     (-MESH_XZ_COORD, MESH_Y_COORD, MESH_XZ_COORD).into(),
-                    ((s * x) / m, (s * (y + 1.0)) / n).into(),
+                    ((s * x) / w, (s * (y + 1.0)) / h).into(),
                 ));
                 vertices.push(crate::video::Vertex::new(
                     (MESH_XZ_COORD, MESH_Y_COORD, MESH_XZ_COORD).into(),
-                    ((s * (x + 1.0)) / m, (s * (y + 1.0)) / n).into(),
+                    ((s * (x + 1.0)) / w, (s * (y + 1.0)) / h).into(),
                 ));
                 vertices.push(crate::video::Vertex::new(
                     (MESH_XZ_COORD, MESH_Y_COORD, -MESH_XZ_COORD).into(),
-                    ((s * (x + 1.0)) / m, (s * y) / n).into(),
+                    ((s * (x + 1.0)) / w, (s * y) / h).into(),
                 ));
                 vertex_count += MESH_VERTICES_PER_TILE;
             }
         }
-        println!("{:?}", &vertices[0..4]);
         (vertices, vertex_count)
     }
 
@@ -220,6 +230,21 @@ impl Mesh {
             index_count += MESH_INDICES_PER_TILE;
         }
         (indices, index_count)
+    }
+
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
+        render_pass.set_bind_group(0, &self.textures[3].bind_group, &[]);
+        render_pass.set_bind_group(2, &self.bind_group, &[]);
+
+        render_pass.set_vertex_buffer(0, self.vertex_buffer[2].slice(..));
+        render_pass.set_index_buffer(self.index_buffer[2].slice(..), wgpu::IndexFormat::Uint16);
+
+        let m = video::MatrixUniform {
+            mat: cgmath::Matrix4::from_translation((-5.0f32, 0.0f32, -5.0f32).into()).into(),
+        };
+        queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&m.mat));
+
+        render_pass.draw_indexed(0..6, 0, 0..1);
     }
 }
 
@@ -235,6 +260,8 @@ pub enum MeshError {
     Texture(#[from] crate::video::TextureError),
 }
 
+// TODO: add Orc1 and Orc2, and this will fix the Clippy disablement below
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 enum TextureID {
     Orc3Attack = 0, // iota like
@@ -247,22 +274,21 @@ enum TextureID {
     Orc3WalkAttack,
 }
 
-const MESH_TEXTURE_ID_LOOKUP: [(TextureID, &str); MESH_TEXTURE_COUNT] = [
-    (TextureID::Orc3Attack, "attack/orc3_attack_full.png"),
-    (TextureID::Orc3Death, "death/orc3_death_full.png"),
-    (TextureID::Orc3Hurt, "hurt/orc3_hurt_full.png"),
-    (TextureID::Orc3Idle, "idle/orc3_idle_full.png"),
-    (TextureID::Orc3Run, "run/orc3_run_full.png"),
-    (TextureID::Orc3RunAttack, "run_attack/orc3_run_attack_full.png"),
-    (TextureID::Orc3Walk, "walk/orc3_walk_full.png"),
-    (TextureID::Orc3WalkAttack, "walk_attack/orc3_walk_attack_full.png"),
+// array of tuples, a tuple is (texture ID, filename, cols count / width, vertices offset)
+const MESH_TEXTURE_ID_LOOKUP: [(TextureID, &str, u32, u32); MESH_TEXTURE_COUNT] = [
+    (TextureID::Orc3Attack, "attack/orc3_attack_full.png", 8, 0),
+    (TextureID::Orc3Death, "death/orc3_death_full.png", 8, 0),
+    (TextureID::Orc3Hurt, "hurt/orc3_hurt_full.png", 6, 1),
+    (TextureID::Orc3Idle, "idle/orc3_idle_full.png", 4, 2),
+    (TextureID::Orc3Run, "run/orc3_run_full.png", 8, 0),
+    (TextureID::Orc3RunAttack, "run_attack/orc3_run_attack_full.png", 8, 0),
+    (TextureID::Orc3Walk, "walk/orc3_walk_full.png", 6, 1),
+    (TextureID::Orc3WalkAttack, "walk_attack/orc3_walk_attack_full.png", 6, 1),
 ];
-
 const MESH_TEXTURE_PATH_PREFIX: &str = "./assets/orc/png/Orc3/orc3_";
 const MESH_TEXTURE_COUNT: usize = 8;
 
-// const MESH_TEXTURE_WIDTH: u32 = 8;
-const MESH_TEXTURE_WIDTH: u32 = 4;
+// note: width is different for every state texture
 const MESH_TEXTURE_HEIGHT: u32 = 4;
 const MESH_TEXTURE_TILE_SIZE: u32 = 64;
 const MESH_VERTICES_PER_TILE: u32 = 4;
