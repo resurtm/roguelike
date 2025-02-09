@@ -1,6 +1,6 @@
 use crate::{
     level::{Level, LevelError},
-    player::{Player, PlayerError},
+    player::{self, Player, PlayerError},
     video::{ObserverGroup, Video},
 };
 use thiserror::Error;
@@ -17,6 +17,10 @@ impl Scene {
         let level = Level::new(video)?;
         let player = Player::new(video)?;
         Ok(Self { observer, level, player })
+    }
+
+    pub fn update(&mut self) {
+        self.player.advance();
     }
 }
 

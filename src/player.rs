@@ -87,10 +87,18 @@ pub struct Player {
 
 impl Player {
     pub fn new(video: &video::Video) -> Result<Self, PlayerError> {
-        let state = State {};
+        let state = State::new();
         let mesh = Mesh::new(video)?;
 
         Ok(Self { state, mesh })
+    }
+
+    pub fn advance(&mut self) {
+        self.state.advance();
+    }
+
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
+        self.mesh.render(render_pass, queue, self.state.animation_frame);
     }
 }
 
@@ -104,7 +112,25 @@ pub enum PlayerError {
 // --- STATE ---
 // --------------------------------------------------
 
-pub struct State {}
+pub struct State {
+    animation_frame: f32,
+}
+
+impl State {
+    fn new() -> Self {
+        Self { animation_frame: 0.0 }
+    }
+
+    fn advance(&mut self) {
+        self.animation_frame += ANIMATION_SPEED;
+        if self.animation_frame >= ANIMATION_FRAMES as f32 {
+            self.animation_frame = 0.0;
+        }
+    }
+}
+
+const ANIMATION_SPEED: f32 = 0.15;
+const ANIMATION_FRAMES: u32 = 4;
 
 // --------------------------------------------------
 // --- MESH ---
@@ -232,7 +258,12 @@ impl Mesh {
         (indices, index_count)
     }
 
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
+    pub fn render(
+        &self,
+        render_pass: &mut wgpu::RenderPass,
+        queue: &wgpu::Queue,
+        animation_frame: f32,
+    ) {
         render_pass.set_bind_group(0, &self.textures[3].bind_group, &[]);
         render_pass.set_bind_group(2, &self.bind_group, &[]);
 
@@ -244,7 +275,9 @@ impl Mesh {
         };
         queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&m.mat));
 
-        render_pass.draw_indexed(0..6, 0, 0..1);
+        let animation_frame = animation_frame as u32;
+        let indices = (animation_frame * 4) * 6;
+        render_pass.draw_indexed(indices..indices + 6, 0, 0..1);
     }
 }
 

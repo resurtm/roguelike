@@ -17,6 +17,8 @@ pub async fn launch() -> Result<(), LaunchError> {
     env_logger::init();
 
     let event_loop = winit::event_loop::EventLoop::new()?;
+    event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
+
     let window = Arc::new(
         winit::window::WindowBuilder::new()
             .with_inner_size(PhysicalSize::new(WINDOW_SIZE.0, WINDOW_SIZE.1))
@@ -28,7 +30,7 @@ pub async fn launch() -> Result<(), LaunchError> {
     let mut video = crate::video::Video::new(Arc::clone(&window)).await?;
     let mut surface_ready = false;
 
-    let scene = crate::scene::Scene::new(&video)?;
+    let mut scene = crate::scene::Scene::new(&video)?;
 
     event_loop.run(move |event, control_flow| match event {
         event::Event::WindowEvent { ref event, window_id } if window_id == window.id() => {
@@ -50,6 +52,10 @@ pub async fn launch() -> Result<(), LaunchError> {
                 }
 
                 WindowEvent::RedrawRequested => {
+                    std::thread::sleep(std::time::Duration::new(0, FRAME_DELAY_NSECS));
+
+                    scene.update();
+
                     window.request_redraw();
                     if !surface_ready {
                         return;
@@ -78,6 +84,8 @@ pub async fn launch() -> Result<(), LaunchError> {
 
     Ok(())
 }
+
+const FRAME_DELAY_NSECS: u32 = 1_000_000_000 / 60; // 1_000 msecs / 60
 
 #[derive(Error, Debug)]
 pub enum LaunchError {
