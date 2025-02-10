@@ -1,6 +1,6 @@
 use crate::{
     level::{Level, LevelError},
-    player::{self, Player, PlayerError},
+    player::{Player, PlayerError},
     video::{ObserverGroup, Video},
 };
 use thiserror::Error;

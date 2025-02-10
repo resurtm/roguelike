@@ -499,7 +499,7 @@ impl<'a> Video<'a> {
             render_pass.draw_indexed(0..scene.level.mesh.index_count, 0, 0..1);
 
             // player
-            scene.player.render(&mut render_pass, &self.queue);
+            scene.player.mesh.render(self, &mut render_pass);
         }
 
         self.queue.submit(iter::once(encoder.finish()));

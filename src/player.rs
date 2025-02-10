@@ -81,24 +81,17 @@ impl PlayerOld {
 // --------------------------------------------------
 
 pub struct Player {
-    state: State,
     pub mesh: Mesh,
 }
 
 impl Player {
     pub fn new(video: &video::Video) -> Result<Self, PlayerError> {
-        let state = State::new();
         let mesh = Mesh::new(video)?;
-
-        Ok(Self { state, mesh })
+        Ok(Self { mesh })
     }
 
     pub fn advance(&mut self) {
-        self.state.advance();
-    }
-
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, queue: &wgpu::Queue) {
-        self.mesh.render(render_pass, queue, self.state.animation_frame);
+        self.mesh.advance();
     }
 }
 
@@ -109,34 +102,14 @@ pub enum PlayerError {
 }
 
 // --------------------------------------------------
-// --- STATE ---
-// --------------------------------------------------
-
-pub struct State {
-    animation_frame: f32,
-}
-
-impl State {
-    fn new() -> Self {
-        Self { animation_frame: 0.0 }
-    }
-
-    fn advance(&mut self) {
-        self.animation_frame += ANIMATION_SPEED;
-        if self.animation_frame >= ANIMATION_FRAMES as f32 {
-            self.animation_frame = 0.0;
-        }
-    }
-}
-
-const ANIMATION_SPEED: f32 = 0.15;
-const ANIMATION_FRAMES: u32 = 4;
-
-// --------------------------------------------------
 // --- MESH ---
 // --------------------------------------------------
 
 pub struct Mesh {
+    texture_id: TextureID,
+    frame: f32,
+    frame_max: f32,
+
     pub textures: [video::TextureGroup; MESH_TEXTURE_COUNT],
 
     pub vertex_buffer: Vec<wgpu::Buffer>,
@@ -154,14 +127,18 @@ pub struct Mesh {
 impl Mesh {
     pub fn new(video: &video::Video) -> Result<Self, MeshError> {
         // textures
-        let mut textures = vec![];
-        for (id, sub_path, _, _) in MESH_TEXTURE_ID_LOOKUP.iter() {
+        let texture_id = TextureID::Orc3Idle;
+        let (mut textures, mut frame_max) = (vec![], 0.0);
+        for (index, (sub_path, col_count, _)) in MESH_TEXTURE_ID_LOOKUP.iter().enumerate() {
             textures.push(video::TextureGroup::new(
                 video,
                 &std::fs::read(format!("{}{}", MESH_TEXTURE_PATH_PREFIX, sub_path))
                     .map_err(MeshError::ReadIO)?,
-                &format!("{:?}", id),
+                &format!("{:?}", TextureID::from_index(index)),
             )?);
+            if TextureID::from_index(index) == texture_id {
+                frame_max = *col_count as f32;
+            }
         }
         let textures = textures.try_into().map_err(|_| MeshError::ReadConvert)?;
 
@@ -205,6 +182,9 @@ impl Mesh {
         });
 
         Ok(Self {
+            texture_id,
+            frame: 0.0,
+            frame_max,
             textures,
             vertex_buffer,
             vertex_count,
@@ -258,26 +238,29 @@ impl Mesh {
         (indices, index_count)
     }
 
-    pub fn render(
-        &self,
-        render_pass: &mut wgpu::RenderPass,
-        queue: &wgpu::Queue,
-        animation_frame: f32,
-    ) {
-        render_pass.set_bind_group(0, &self.textures[3].bind_group, &[]);
+    fn advance(&mut self) {
+        self.frame += MESH_ANIM_SPEED;
+        let frame_max = MESH_TEXTURE_ID_LOOKUP[self.texture_id.index()].1 as f32;
+        if self.frame >= frame_max {
+            self.frame = 0.0;
+        }
+    }
+
+    pub fn render(&self, video: &video::Video, render_pass: &mut wgpu::RenderPass) {
+        render_pass.set_bind_group(0, &self.textures[self.texture_id.index()].bind_group, &[]);
         render_pass.set_bind_group(2, &self.bind_group, &[]);
 
-        render_pass.set_vertex_buffer(0, self.vertex_buffer[2].slice(..));
-        render_pass.set_index_buffer(self.index_buffer[2].slice(..), wgpu::IndexFormat::Uint16);
+        let buf = MESH_TEXTURE_ID_LOOKUP[self.texture_id.index()].2 as usize;
+        render_pass.set_vertex_buffer(0, self.vertex_buffer[buf].slice(..));
+        render_pass.set_index_buffer(self.index_buffer[buf].slice(..), wgpu::IndexFormat::Uint16);
 
         let m = video::MatrixUniform {
             mat: cgmath::Matrix4::from_translation((-5.0f32, 0.0f32, -5.0f32).into()).into(),
         };
-        queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&m.mat));
+        video.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&m.mat));
 
-        let animation_frame = animation_frame as u32;
-        let indices = (animation_frame * 4) * 6;
-        render_pass.draw_indexed(indices..indices + 6, 0, 0..1);
+        let base_index = (self.frame as u32 * 4) * 6;
+        render_pass.draw_indexed(base_index..base_index + 6, 0, 0..1);
     }
 }
 
@@ -295,9 +278,9 @@ pub enum MeshError {
 
 // TODO: add Orc1 and Orc2, and this will fix the Clippy disablement below
 #[allow(clippy::enum_variant_names)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum TextureID {
-    Orc3Attack = 0, // iota like
+    Orc3Attack,
     Orc3Death,
     Orc3Hurt,
     Orc3Idle,
@@ -307,24 +290,52 @@ enum TextureID {
     Orc3WalkAttack,
 }
 
-// array of tuples, a tuple is (texture ID, filename, cols count / width, vertices offset)
-const MESH_TEXTURE_ID_LOOKUP: [(TextureID, &str, u32, u32); MESH_TEXTURE_COUNT] = [
-    (TextureID::Orc3Attack, "attack/orc3_attack_full.png", 8, 0),
-    (TextureID::Orc3Death, "death/orc3_death_full.png", 8, 0),
-    (TextureID::Orc3Hurt, "hurt/orc3_hurt_full.png", 6, 1),
-    (TextureID::Orc3Idle, "idle/orc3_idle_full.png", 4, 2),
-    (TextureID::Orc3Run, "run/orc3_run_full.png", 8, 0),
-    (TextureID::Orc3RunAttack, "run_attack/orc3_run_attack_full.png", 8, 0),
-    (TextureID::Orc3Walk, "walk/orc3_walk_full.png", 6, 1),
-    (TextureID::Orc3WalkAttack, "walk_attack/orc3_walk_attack_full.png", 6, 1),
+impl TextureID {
+    fn index(&self) -> usize {
+        match *self {
+            Self::Orc3Attack => 0,
+            Self::Orc3Death => 1,
+            Self::Orc3Hurt => 2,
+            Self::Orc3Idle => 3,
+            Self::Orc3Run => 4,
+            Self::Orc3RunAttack => 5,
+            Self::Orc3Walk => 6,
+            Self::Orc3WalkAttack => 7,
+        }
+    }
+
+    fn from_index(index: usize) -> Self {
+        match index {
+            0 => Self::Orc3Attack,
+            1 => Self::Orc3Death,
+            2 => Self::Orc3Hurt,
+            3 => Self::Orc3Idle,
+            4 => Self::Orc3Run,
+            5 => Self::Orc3RunAttack,
+            6 => Self::Orc3Walk,
+            7 => Self::Orc3WalkAttack,
+            _ => panic!("invalid texture index"),
+        }
+    }
+}
+
+const MESH_TEXTURE_ID_LOOKUP: [(&str, u32, u32); MESH_TEXTURE_COUNT] = [
+    ("attack/orc3_attack_full.png", 8, 0), // TextureID::Orc3Attack
+    ("death/orc3_death_full.png", 8, 0),   // TextureID::Orc3Death
+    ("hurt/orc3_hurt_full.png", 6, 1),     // TextureID::Orc3Hurt
+    ("idle/orc3_idle_full.png", 4, 2),     // TextureID::Orc3Idle
+    ("run/orc3_run_full.png", 8, 0),       // TextureID::Orc3Run
+    ("run_attack/orc3_run_attack_full.png", 8, 0), // TextureID::Orc3RunAttack
+    ("walk/orc3_walk_full.png", 6, 1),     // TextureID::Orc3Walk
+    ("walk_attack/orc3_walk_attack_full.png", 6, 1), // TextureID::Orc3WalkAttack
 ];
 const MESH_TEXTURE_PATH_PREFIX: &str = "./assets/orc/png/Orc3/orc3_";
 const MESH_TEXTURE_COUNT: usize = 8;
 
-// note: width is different for every state texture
 const MESH_TEXTURE_HEIGHT: u32 = 4;
 const MESH_TEXTURE_TILE_SIZE: u32 = 64;
 const MESH_VERTICES_PER_TILE: u32 = 4;
 const MESH_INDICES_PER_TILE: u32 = 6;
 const MESH_XZ_COORD: f32 = 1.0;
 const MESH_Y_COORD: f32 = -0.25;
+const MESH_ANIM_SPEED: f32 = 0.15;

@@ -1,7 +1,6 @@
 use crate::video::{TextureGroup, Vertex, Video};
 use crate::{aabb::Aabb, consts::TILE_SIZE};
-use cgmath::{Point2, Point3};
-use std::borrow::{Borrow, BorrowMut};
+use cgmath::Point2;
 use std::collections::HashSet;
 use thiserror::Error;
 use wgpu::util::DeviceExt;
