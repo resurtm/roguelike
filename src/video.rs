@@ -1,9 +1,8 @@
-use crate::consts::WINDOW_SIZE;
-use cgmath::{ortho, Matrix4, Point2, Point3, SquareMatrix, Vector3};
+use cgmath::{Point2, Point3};
 use image::{GenericImageView, ImageError};
 use std::{iter, sync::Arc};
 use thiserror::Error;
-use wgpu::{util::DeviceExt, CreateSurfaceError, RequestDeviceError};
+use wgpu::{CreateSurfaceError, RequestDeviceError};
 use winit::window::Window;
 
 // --------------------------------------------------
@@ -41,6 +40,7 @@ impl Texture {
         Self::create_internal(device, queue, image, label)
     }
 
+    /// Internal helper function.
     fn create_internal(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -52,6 +52,7 @@ impl Texture {
             height: image.dimensions().1,
             depth_or_array_layers: 1,
         };
+
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some(&format!("{}_texture", label)),
             size,
@@ -77,6 +78,7 @@ impl Texture {
             },
             size,
         );
+
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -84,6 +86,7 @@ impl Texture {
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             ..Default::default()
         });
+
         Self { texture, view, sampler }
     }
 }
@@ -105,7 +108,7 @@ impl TextureGroup {
         let texture = Texture::from_bytes(&video.device, &video.queue, bytes, label)?;
 
         let bind_group = video.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &video.bind_group_layouts[0],
+            layout: &video.bind_group_layouts[2],
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -116,107 +119,16 @@ impl TextureGroup {
                     resource: wgpu::BindingResource::Sampler(&texture.sampler),
                 },
             ],
-            label: Some(&format!("{}_bind_group", label)),
+            label: Some(&format!("{}_texture_bind_group", label)),
         });
 
         Ok(Self { texture, bind_group })
     }
 }
 
-pub struct Observer {
-    eye: Point3<f32>,
-    target: Point3<f32>,
-    up: Vector3<f32>,
-
-    left: f32,
-    right: f32,
-    bottom: f32,
-    top: f32,
-    near: f32,
-    far: f32,
-}
-
-impl Observer {
-    pub fn default() -> Self {
-        Self {
-            eye: Point3::new(-5.0, 1.0, -5.0),
-            target: Point3::new(-5.0, 0.0, -5.0),
-            up: -Vector3::unit_z(),
-
-            left: -((WINDOW_SIZE.0 / 2 / PIXELS_PER_TILE) as f32),
-            right: (WINDOW_SIZE.0 / 2 / PIXELS_PER_TILE) as f32,
-            bottom: -((WINDOW_SIZE.1 / 2 / PIXELS_PER_TILE) as f32),
-            top: (WINDOW_SIZE.1 / 2 / PIXELS_PER_TILE) as f32,
-            near: -1.0,
-            far: 1.0,
-        }
-    }
-
-    fn build_matrix(&self) -> Matrix4<f32> {
-        let proj = ortho(self.left, self.right, self.bottom, self.top, self.near, self.far);
-        let view = Matrix4::look_at_rh(self.eye, self.target, self.up);
-        OPENGL_TO_WGPU_MATRIX * proj * view
-    }
-}
-
-const PIXELS_PER_TILE: u32 = 32 * 6;
-
-#[rustfmt::skip]
-const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.5,
-    0.0, 0.0, 0.0, 1.0,
-);
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct ObserverUniform {
-    view_proj: [[f32; 4]; 4],
-}
-
-impl ObserverUniform {
-    fn new() -> Self {
-        Self { view_proj: Matrix4::identity().into() }
-    }
-
-    fn apply_observer(&mut self, observer: &Observer) {
-        self.view_proj = observer.build_matrix().into();
-    }
-}
-
-pub struct ObserverGroup {
-    #[allow(unused)]
-    observer: Observer,
-    #[allow(unused)]
-    uniform: ObserverUniform,
-    #[allow(unused)]
-    buffer: wgpu::Buffer,
-    pub bind_group: wgpu::BindGroup,
-}
-
-impl ObserverGroup {
-    pub fn new(video: &Video) -> Self {
-        let observer = Observer::default();
-
-        let mut uniform = ObserverUniform::new();
-        uniform.apply_observer(&observer);
-
-        let buffer = video.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("observer_buffer"),
-            contents: bytemuck::cast_slice(&[uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let bind_group = video.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("observer_bind_group"),
-            layout: &video.bind_group_layouts[1],
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
-        });
-
-        Self { observer, uniform, buffer, bind_group }
-    }
-}
+// --------------------------------------------------
+// --- VERTEX ---
+// --------------------------------------------------
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -230,7 +142,7 @@ impl Vertex {
         Self { position: position.into(), tex_coords: tex_coords.into() }
     }
 
-    pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+    pub fn get_layout<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
@@ -250,11 +162,19 @@ impl Vertex {
     }
 }
 
+// --------------------------------------------------
+// --- MATRIX UNIFORM ---
+// --------------------------------------------------
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct MatrixUniform {
-    pub mat: [[f32; 4]; 4],
+    pub matrix: [[f32; 4]; 4],
 }
+
+// --------------------------------------------------
+// --- VIDEO ---
+// --------------------------------------------------
 
 pub struct Video<'a> {
     #[allow(dead_code)]
@@ -266,7 +186,6 @@ pub struct Video<'a> {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
-
     pipeline: Option<wgpu::RenderPipeline>,
     pub bind_group_layouts: Vec<wgpu::BindGroupLayout>,
 }
@@ -323,29 +242,6 @@ impl<'a> Video<'a> {
         let mut bind_group_layouts = vec![];
         bind_group_layouts.push(device.create_bind_group_layout(
             &wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
-                label: Some("texture_bind_group_layout"),
-            },
-        ));
-        bind_group_layouts.push(device.create_bind_group_layout(
-            &wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::VERTEX,
@@ -372,6 +268,29 @@ impl<'a> Video<'a> {
                     count: None,
                 }],
                 label: Some("level_mesh_bind_group_layout"),
+            },
+        ));
+        bind_group_layouts.push(device.create_bind_group_layout(
+            &wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("texture_bind_group_layout"),
             },
         ));
 
@@ -415,7 +334,7 @@ impl<'a> Video<'a> {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: "vs_main",
-                    buffers: &[Vertex::desc()],
+                    buffers: &[Vertex::get_layout()],
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
@@ -423,7 +342,6 @@ impl<'a> Video<'a> {
                     entry_point: "fs_main",
                     targets: &[Some(wgpu::ColorTargetState {
                         format: self.config.format,
-                        // blend: Some(wgpu::BlendState::REPLACE),
                         blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                         write_mask: wgpu::ColorWrites::ALL,
                     })],
@@ -453,7 +371,6 @@ impl<'a> Video<'a> {
     pub fn render(&mut self, scene: &crate::scene::Scene) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("render_encoder"),
         });
@@ -479,31 +396,15 @@ impl<'a> Video<'a> {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-
             render_pass.set_pipeline(self.get_pipeline());
-            render_pass.set_bind_group(1, &scene.observer.bind_group, &[]);
 
-            // level
-            render_pass.set_bind_group(0, &scene.level.mesh.texture.bind_group, &[]);
-            render_pass.set_bind_group(2, &scene.level.mesh.bind_group, &[]);
-            render_pass.set_vertex_buffer(0, scene.level.mesh.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(
-                scene.level.mesh.index_buffer.slice(..),
-                wgpu::IndexFormat::Uint16,
-            );
-            let m = MatrixUniform {
-                mat: Matrix4::from_translation((-10.0f32, 0.0f32, -7.5f32).into()).into(),
-            };
-            self.queue.write_buffer(&scene.level.mesh.buffer, 0, bytemuck::cast_slice(&m.mat));
-            render_pass.draw_indexed(0..scene.level.mesh.index_count, 0, 0..1);
-
-            // player
+            render_pass.set_bind_group(0, &scene.observer.bind_group, &[]);
+            scene.level.mesh.render(self, &mut render_pass);
             scene.player.mesh.render(self, &mut render_pass);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
         output.present();
-
         Ok(())
     }
 }

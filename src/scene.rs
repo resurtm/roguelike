@@ -1,21 +1,16 @@
-use crate::{
-    level::{Level, LevelError},
-    player::{Player, PlayerError},
-    video::{ObserverGroup, Video},
-};
 use thiserror::Error;
 
 pub struct Scene {
-    pub observer: ObserverGroup,
-    pub level: Level,
-    pub player: Player,
+    pub observer: crate::observer::ObserverGroup,
+    pub level: crate::level::Level,
+    pub player: crate::player::Player,
 }
 
 impl Scene {
-    pub fn new(video: &Video) -> Result<Self, SceneError> {
-        let observer = ObserverGroup::new(video);
-        let level = Level::new(video)?;
-        let player = Player::new(video)?;
+    pub fn new(video: &crate::video::Video) -> Result<Self, SceneError> {
+        let observer = crate::observer::ObserverGroup::new(video);
+        let level = crate::level::Level::new(video)?;
+        let player = crate::player::Player::new(video)?;
         Ok(Self { observer, level, player })
     }
 
@@ -28,8 +23,8 @@ impl Scene {
 #[derive(Error, Debug)]
 pub enum SceneError {
     #[error("level error: {0}")]
-    Level(#[from] LevelError),
+    Level(#[from] crate::level::LevelError),
 
     #[error("player error: {0}")]
-    Player(#[from] PlayerError),
+    Player(#[from] crate::player::PlayerError),
 }

@@ -177,7 +177,7 @@ impl Mesh {
         });
         let bind_group = video.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("player_mesh_bind_group"),
-            layout: &video.bind_group_layouts[2],
+            layout: &video.bind_group_layouts[1],
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
         });
 
@@ -274,18 +274,20 @@ impl Mesh {
 
     /// Render mesh with its current given state based on provided video instance and render pass.
     pub fn render(&self, vid: &video::Video, rp: &mut wgpu::RenderPass) {
-        rp.set_bind_group(0, &self.textures[self.texture_id.index()].bind_group, &[]);
-        rp.set_bind_group(2, &self.bind_group, &[]);
+        rp.set_bind_group(1, &self.bind_group, &[]);
+        rp.set_bind_group(2, &self.textures[self.texture_id.index()].bind_group, &[]);
 
         let b = self.get_buffer();
         rp.set_vertex_buffer(0, self.vertex_buffer[b].slice(..));
         rp.set_index_buffer(self.index_buffer[b].slice(..), wgpu::IndexFormat::Uint16);
 
         let m = video::MatrixUniform {
-            mat: cgmath::Matrix4::from_translation((self.position.x, 0.0, self.position.y).into())
-                .into(),
+            matrix: cgmath::Matrix4::from_translation(
+                (self.position.x, 0.0, self.position.y).into(),
+            )
+            .into(),
         };
-        vid.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&m.mat));
+        vid.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&m.matrix));
 
         let idx = (self.frame as u32 * VERTS_PER_TILE + self.get_texture_row()) * INDS_PER_TILE;
         rp.draw_indexed(idx..idx + 6, 0, 0..1);

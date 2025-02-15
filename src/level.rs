@@ -1,6 +1,6 @@
 use crate::video::{TextureGroup, Vertex, Video};
 use crate::{consts::TILE_SIZE, geometry::Aabb};
-use cgmath::Point2;
+use cgmath::{Matrix4, Point2};
 use std::collections::HashSet;
 use thiserror::Error;
 use wgpu::util::DeviceExt;
@@ -566,7 +566,7 @@ impl Mesh {
         });
         let bind_group = video.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("level_mesh_bind_group"),
-            layout: &video.bind_group_layouts[2],
+            layout: &video.bind_group_layouts[1],
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
         });
 
@@ -623,6 +623,19 @@ impl Mesh {
             index_count += MESH_INDICES_PER_TILE;
         }
         (indices, index_count)
+    }
+
+    /// Render mesh with its current given state based on provided video instance and render pass.
+    pub fn render(&self, vid: &crate::video::Video, rp: &mut wgpu::RenderPass) {
+        rp.set_bind_group(1, &self.bind_group, &[]);
+        rp.set_bind_group(2, &self.texture.bind_group, &[]);
+        rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+        let m = crate::video::MatrixUniform {
+            matrix: Matrix4::from_translation((-10.0f32, 0.0f32, -7.5f32).into()).into(),
+        };
+        vid.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&m.matrix));
+        rp.draw_indexed(0..self.index_count, 0, 0..1);
     }
 }
 

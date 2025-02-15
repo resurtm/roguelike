@@ -12,7 +12,7 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
 };
 
-// Game application main entry point.
+/// Game application main entry point.
 pub async fn launch() -> Result<(), LaunchError> {
     env_logger::init();
 
