@@ -1,5 +1,6 @@
 use crate::{
     consts::{WINDOW_SIZE, WINDOW_TITLE},
+    input,
     video::VideoError,
 };
 use std::sync::Arc;
@@ -30,6 +31,7 @@ pub async fn launch() -> Result<(), LaunchError> {
     let mut video = crate::video::Video::new(Arc::clone(&window)).await?;
     let mut surface_ready = false;
 
+    let mut input = crate::input::Input::new();
     let mut scene = crate::scene::Scene::new(&video)?;
 
     event_loop.run(move |event, control_flow| match event {
@@ -46,15 +48,18 @@ pub async fn launch() -> Result<(), LaunchError> {
                     ..
                 } => control_flow.exit(),
 
+                WindowEvent::KeyboardInput { event, .. } => input.handle_key_event(event),
+
                 WindowEvent::Resized(physical_size) => {
                     video.handle_resize(*physical_size);
                     surface_ready = true;
                 }
 
                 WindowEvent::RedrawRequested => {
+                    // artificially slow down / cap frame rate
                     std::thread::sleep(std::time::Duration::new(0, FRAME_DELAY_NSECS));
 
-                    scene.update();
+                    scene.advance(&input);
 
                     window.request_redraw();
                     if !surface_ready {

@@ -30,8 +30,8 @@ impl Player {
             position: Point2::new(-5.0, -5.0),
 
             velocity: Vector2::new(0.0, 0.0),
-            velocity_delta: 0.35,
-            velocity_max: 6.5,
+            velocity_delta: 0.01,
+            velocity_max: 0.025,
             velocity_slowdown: 0.92,
 
             attack: false,

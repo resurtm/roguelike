@@ -160,7 +160,7 @@ impl Observer {
     }
 }
 
-const PIXELS_PER_TILE: u32 = 32 * 3;
+const PIXELS_PER_TILE: u32 = 32 * 6;
 
 #[rustfmt::skip]
 const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(

@@ -1,22 +1,23 @@
-use sdl2::{event::Event, keyboard::Keycode};
+use winit::event::{ElementState, KeyEvent};
+use winit::keyboard::{KeyCode, PhysicalKey::Code};
 
-pub(crate) struct Input {
-    pub(crate) key_up: bool,
-    pub(crate) key_down: bool,
-    pub(crate) key_left: bool,
-    pub(crate) key_right: bool,
+pub struct Input {
+    pub key_up: bool,
+    pub key_down: bool,
+    pub key_left: bool,
+    pub key_right: bool,
 
-    pub(crate) key_w: bool,
-    pub(crate) key_s: bool,
-    pub(crate) key_a: bool,
-    pub(crate) key_d: bool,
+    pub key_w: bool,
+    pub key_s: bool,
+    pub key_a: bool,
+    pub key_d: bool,
 
-    pub(crate) key_space: bool,
+    pub key_space: bool,
 }
 
 impl Input {
-    pub(crate) fn new() -> Input {
-        Input {
+    pub fn new() -> Self {
+        Self {
             key_up: false,
             key_down: false,
             key_left: false,
@@ -31,38 +32,24 @@ impl Input {
         }
     }
 
-    pub(crate) fn handle_key_event(&mut self, event: &Event) {
-        match event {
-            Event::KeyDown { keycode: Some(k), .. } => match *k {
-                // arrow keys
-                Keycode::UP => self.key_up = true,
-                Keycode::DOWN => self.key_down = true,
-                Keycode::LEFT => self.key_left = true,
-                Keycode::RIGHT => self.key_right = true,
-                // wsad keys
-                Keycode::W => self.key_w = true,
-                Keycode::S => self.key_s = true,
-                Keycode::A => self.key_a = true,
-                Keycode::D => self.key_d = true,
-                // etc
-                Keycode::SPACE => self.key_space = true,
+    pub fn handle_key_event(&mut self, e: &KeyEvent) {
+        if let Code(key_code) = e.physical_key {
+            let t = e.state == ElementState::Pressed;
+            match key_code {
+                KeyCode::ArrowUp => self.key_up = t,
+                KeyCode::ArrowDown => self.key_down = t,
+                KeyCode::ArrowLeft => self.key_left = t,
+                KeyCode::ArrowRight => self.key_right = t,
+
+                KeyCode::KeyW => self.key_w = t,
+                KeyCode::KeyS => self.key_s = t,
+                KeyCode::KeyA => self.key_a = t,
+                KeyCode::KeyD => self.key_d = t,
+
+                KeyCode::Space => self.key_space = t,
+
                 _ => {}
-            },
-            Event::KeyUp { keycode: Some(k), .. } => match *k {
-                // arrow keys
-                Keycode::UP => self.key_up = false,
-                Keycode::DOWN => self.key_down = false,
-                Keycode::LEFT => self.key_left = false,
-                Keycode::RIGHT => self.key_right = false,
-                // wsad keys
-                Keycode::W => self.key_w = false,
-                Keycode::S => self.key_s = false,
-                Keycode::A => self.key_a = false,
-                Keycode::D => self.key_d = false,
-                Keycode::SPACE => self.key_space = false,
-                _ => {}
-            },
-            _ => {}
+            }
         }
     }
 }

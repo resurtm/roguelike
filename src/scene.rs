@@ -19,8 +19,9 @@ impl Scene {
         Ok(Self { observer, level, player })
     }
 
-    pub fn update(&mut self) {
+    pub fn advance(&mut self, input: &crate::input::Input) {
         self.player.advance();
+        self.player.apply_input(input);
     }
 }
 
