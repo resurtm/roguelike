@@ -89,7 +89,7 @@ impl ObserverGroup {
 
         let bind_group = video.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("observer_bind_group"),
-            layout: &video.bind_group_layouts[0],
+            layout: &video.bind_group_layouts[crate::video::BIND_GROUP_OBSERVER as usize],
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
         });
 

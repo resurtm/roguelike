@@ -108,7 +108,7 @@ impl TextureGroup {
         let texture = Texture::from_bytes(&video.device, &video.queue, bytes, label)?;
 
         let bind_group = video.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &video.bind_group_layouts[2],
+            layout: &video.bind_group_layouts[BIND_GROUP_TEXTURE as usize],
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -239,9 +239,10 @@ impl<'a> Video<'a> {
             desired_maximum_frame_latency: 2,
         };
 
-        let mut bind_group_layouts = vec![];
-        bind_group_layouts.push(device.create_bind_group_layout(
-            &wgpu::BindGroupLayoutDescriptor {
+        // Note: order here is very important, this is how it goes to the shader's groups.
+        let bind_group_layouts = vec![
+            // 0. BIND_GROUP_OBSERVER
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::VERTEX,
@@ -253,10 +254,9 @@ impl<'a> Video<'a> {
                     count: None,
                 }],
                 label: Some("observer_bind_group_layout"),
-            },
-        ));
-        bind_group_layouts.push(device.create_bind_group_layout(
-            &wgpu::BindGroupLayoutDescriptor {
+            }),
+            // 1. BIND_GROUP_TRANSFORM
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::VERTEX,
@@ -267,11 +267,10 @@ impl<'a> Video<'a> {
                     },
                     count: None,
                 }],
-                label: Some("level_mesh_bind_group_layout"),
-            },
-        ));
-        bind_group_layouts.push(device.create_bind_group_layout(
-            &wgpu::BindGroupLayoutDescriptor {
+                label: Some("transform_bind_group_layout"),
+            }),
+            // 2. BIND_GROUP_TEXTURE
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
@@ -291,8 +290,8 @@ impl<'a> Video<'a> {
                     },
                 ],
                 label: Some("texture_bind_group_layout"),
-            },
-        ));
+            }),
+        ];
 
         Ok(Self {
             instance,
@@ -322,9 +321,6 @@ impl<'a> Video<'a> {
                 self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("render_pipeline_layout"),
                     bind_group_layouts: &self.bind_group_layouts.iter().collect::<Vec<_>>(),
-                    // &level_mesh.texture_group.bind_group_layout,
-                    // &observer_group.bind_group_layout,
-                    // &level_mesh_bind_group_layout,
                     push_constant_ranges: &[],
                 });
 
@@ -383,10 +379,9 @@ impl<'a> Video<'a> {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            // const BG_COLOR: (u8, u8, u8) = (37, 19, 26);
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
+                            r: 37.0 / 4096.0,
+                            g: 19.0 / 4096.0,
+                            b: 26.0 / 4096.0,
                             a: 1.0,
                         }),
                         store: wgpu::StoreOp::Store,
@@ -398,7 +393,7 @@ impl<'a> Video<'a> {
             });
             render_pass.set_pipeline(self.get_pipeline());
 
-            render_pass.set_bind_group(0, &scene.observer.bind_group, &[]);
+            render_pass.set_bind_group(BIND_GROUP_OBSERVER, &scene.observer.bind_group, &[]);
             scene.level.mesh.render(self, &mut render_pass);
             scene.player.mesh.render(self, &mut render_pass);
         }
@@ -423,3 +418,8 @@ pub enum VideoError {
     #[error("texture error: {0}")]
     Texture(#[from] TextureError),
 }
+
+// group indices in the shader code
+pub const BIND_GROUP_OBSERVER: u32 = 0;
+pub const BIND_GROUP_TRANSFORM: u32 = 1;
+pub const BIND_GROUP_TEXTURE: u32 = 2;

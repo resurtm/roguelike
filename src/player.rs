@@ -177,7 +177,7 @@ impl Mesh {
         });
         let bind_group = video.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("player_mesh_bind_group"),
-            layout: &video.bind_group_layouts[1],
+            layout: &video.bind_group_layouts[crate::video::BIND_GROUP_TRANSFORM as usize],
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
         });
 

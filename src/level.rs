@@ -566,7 +566,7 @@ impl Mesh {
         });
         let bind_group = video.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("level_mesh_bind_group"),
-            layout: &video.bind_group_layouts[1],
+            layout: &video.bind_group_layouts[crate::video::BIND_GROUP_TRANSFORM as usize],
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
         });
 
@@ -627,14 +627,17 @@ impl Mesh {
 
     /// Render mesh with its current given state based on provided video instance and render pass.
     pub fn render(&self, vid: &crate::video::Video, rp: &mut wgpu::RenderPass) {
-        rp.set_bind_group(1, &self.bind_group, &[]);
-        rp.set_bind_group(2, &self.texture.bind_group, &[]);
+        rp.set_bind_group(crate::video::BIND_GROUP_TRANSFORM, &self.bind_group, &[]);
+        rp.set_bind_group(crate::video::BIND_GROUP_TEXTURE, &self.texture.bind_group, &[]);
+
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        let m = crate::video::MatrixUniform {
+
+        let uni = crate::video::MatrixUniform {
             matrix: Matrix4::from_translation((-10.0f32, 0.0f32, -7.5f32).into()).into(),
         };
-        vid.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&m.matrix));
+        vid.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&uni.matrix));
+
         rp.draw_indexed(0..self.index_count, 0, 0..1);
     }
 }
