@@ -1,4 +1,3 @@
-use crate::consts::WINDOW_SIZE;
 use cgmath::{Matrix4, Point3, SquareMatrix, Vector3};
 use wgpu::util::DeviceExt;
 
@@ -16,18 +15,18 @@ pub struct Observer {
 }
 
 impl Observer {
-    pub fn default() -> Self {
+    pub fn new(win_size: (u32, u32)) -> Self {
         Self {
             eye: Point3::new(-5.0, 1.0, -5.0),
             target: Point3::new(-5.0, 0.0, -5.0),
             up: -Vector3::unit_z(),
 
-            left: -((WINDOW_SIZE.0 / 2 / PIXELS_PER_TILE) as f32),
-            right: (WINDOW_SIZE.0 / 2 / PIXELS_PER_TILE) as f32,
-            bottom: -((WINDOW_SIZE.1 / 2 / PIXELS_PER_TILE) as f32),
-            top: (WINDOW_SIZE.1 / 2 / PIXELS_PER_TILE) as f32,
-            near: -1.0,
-            far: 1.0,
+            left: -((win_size.0 / 2 / PIXELS_PER_TILE) as f32),
+            right: (win_size.0 / 2 / PIXELS_PER_TILE) as f32,
+            bottom: -((win_size.1 / 2 / PIXELS_PER_TILE) as f32),
+            top: (win_size.1 / 2 / PIXELS_PER_TILE) as f32,
+            near: -10.0,
+            far: 10.0,
         }
     }
 
@@ -38,7 +37,7 @@ impl Observer {
     }
 }
 
-const PIXELS_PER_TILE: u32 = 32 * 6;
+const PIXELS_PER_TILE: u32 = 32 * 5;
 
 #[rustfmt::skip]
 const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
@@ -65,18 +64,15 @@ impl ObserverUniform {
 }
 
 pub struct ObserverGroup {
-    #[allow(unused)]
     observer: Observer,
-    #[allow(unused)]
     uniform: ObserverUniform,
-    #[allow(unused)]
     buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
 }
 
 impl ObserverGroup {
     pub fn new(video: &crate::video::Video) -> Self {
-        let observer = Observer::default();
+        let observer = Observer::new((1600, 1200));
 
         let mut uniform = ObserverUniform::new();
         uniform.apply_observer(&observer);
@@ -94,5 +90,11 @@ impl ObserverGroup {
         });
 
         Self { observer, uniform, buffer, bind_group }
+    }
+
+    pub fn handle_resize(&mut self, video: &crate::video::Video, win_size: (u32, u32)) {
+        self.observer = Observer::new(win_size);
+        self.uniform.apply_observer(&self.observer);
+        video.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[self.uniform]));
     }
 }

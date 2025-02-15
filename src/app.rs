@@ -1,7 +1,4 @@
-use crate::{
-    consts::{WINDOW_SIZE, WINDOW_TITLE},
-    video::VideoError,
-};
+use crate::video::VideoError;
 use std::sync::Arc;
 use thiserror::Error;
 use winit::{
@@ -21,9 +18,9 @@ pub async fn launch() -> Result<(), LaunchError> {
 
     let window = Arc::new(
         winit::window::WindowBuilder::new()
-            .with_inner_size(PhysicalSize::new(WINDOW_SIZE.0, WINDOW_SIZE.1))
-            .with_position(PhysicalPosition::new(50, 50))
-            .with_title(WINDOW_TITLE)
+            .with_inner_size(PhysicalSize::new(1920, 1280))
+            .with_position(PhysicalPosition::new(25, 25))
+            .with_title("roguelike 🔮🧝🏻🪄")
             .build(&event_loop)?,
     );
 
@@ -32,6 +29,7 @@ pub async fn launch() -> Result<(), LaunchError> {
 
     let mut input = crate::input::Input::new();
     let mut scene = crate::scene::Scene::new(&video)?;
+    scene.observer.handle_resize(&video, window.inner_size().into());
 
     event_loop.run(move |event, control_flow| match event {
         event::Event::WindowEvent { ref event, window_id } if window_id == window.id() => {
@@ -51,6 +49,7 @@ pub async fn launch() -> Result<(), LaunchError> {
 
                 WindowEvent::Resized(physical_size) => {
                     video.handle_resize(*physical_size);
+                    scene.observer.handle_resize(&video, (*physical_size).into());
                     surface_ready = true;
                 }
 

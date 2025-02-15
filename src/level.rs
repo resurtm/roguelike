@@ -1,5 +1,5 @@
+use crate::geometry::Aabb;
 use crate::video::{TextureGroup, Vertex, Video};
-use crate::{consts::TILE_SIZE, geometry::Aabb};
 use cgmath::{Matrix4, Point2};
 use std::collections::HashSet;
 use thiserror::Error;
@@ -162,6 +162,8 @@ impl Collision {
         true
     }
 }
+
+const TILE_SIZE: u32 = 96;
 
 // --------------------------------------------------
 // --- DUNGEON TILE ---
