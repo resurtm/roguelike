@@ -56,9 +56,7 @@ pub async fn launch() -> Result<(), LaunchError> {
                 WindowEvent::RedrawRequested => {
                     // artificially slow down / cap frame rate
                     std::thread::sleep(std::time::Duration::new(0, FRAME_DELAY_NSECS));
-
                     scene.advance(&input);
-
                     window.request_redraw();
                     if !surface_ready {
                         return;
@@ -67,6 +65,7 @@ pub async fn launch() -> Result<(), LaunchError> {
                         Ok(_) => {}
                         Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
                             video.handle_resize(window.inner_size());
+                            scene.observer.handle_resize(&video, window.inner_size().into());
                         }
                         Err(wgpu::SurfaceError::OutOfMemory) => {
                             log::error!("OutOfMemory");
