@@ -1,6 +1,5 @@
 use crate::{
     consts::{WINDOW_SIZE, WINDOW_TITLE},
-    input,
     video::VideoError,
 };
 use std::sync::Arc;
