@@ -47,7 +47,6 @@ impl Texture {
         image: &image::DynamicImage,
         label: &str,
     ) -> Self {
-        println!("{:#?}", image.dimensions());
         let size = wgpu::Extent3d {
             width: image.dimensions().0,
             height: image.dimensions().1,
@@ -140,8 +139,8 @@ pub struct Observer {
 impl Observer {
     pub fn default() -> Self {
         Self {
-            eye: Point3::new(0.0, 1.0, 0.0),
-            target: Point3::new(0.0, 0.0, 0.0),
+            eye: Point3::new(-5.0, 1.0, -5.0),
+            target: Point3::new(-5.0, 0.0, -5.0),
             up: -Vector3::unit_z(),
 
             left: -((WINDOW_SIZE.0 / 2 / PIXELS_PER_TILE) as f32),

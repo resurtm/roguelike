@@ -1,5 +1,5 @@
-use crate::{input::Input, video};
-use cgmath::{Point2, Vector2};
+use crate::{geometry::Direction, input::Input, video};
+use cgmath::{InnerSpace, Point2, Vector2};
 use thiserror::Error;
 use wgpu::util::DeviceExt;
 
@@ -23,7 +23,7 @@ pub struct Player {
 
 impl Player {
     /// Creates a new player character instance.
-    pub fn new(video: &video::Video) -> Result<Self, PlayerError> {
+    pub fn new(video: &crate::video::Video) -> Result<Self, PlayerError> {
         let mesh = Mesh::new(video)?;
 
         Ok(Self {
@@ -58,7 +58,7 @@ impl Player {
             self.velocity.y = -self.velocity_max;
         }
 
-        self.mesh.advance(self.position);
+        self.mesh.advance(self.position, self.velocity, self.attack);
     }
 
     /// Apply input to the player character state, physics, etc.
@@ -108,11 +108,10 @@ pub enum PlayerError {
 // Represents a player character mesh.
 pub struct Mesh {
     frame: f32,
-    frame_max: f32,
     position: Point2<f32>,
+    direction: Direction,
 
     texture_id: TextureID,
-    texture_buffer: u32,
     pub textures: [video::TextureGroup; TEX_COUNT],
 
     pub vertex_buffer: Vec<wgpu::Buffer>,
@@ -182,14 +181,12 @@ impl Mesh {
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
         });
 
-        let t = TEX_ID_LOOKUP[texture_id.index()];
         Ok(Self {
             frame: 0.0,
-            frame_max: t.1 as f32,
             position: Point2::new(0.0, 0.0),
+            direction: Direction::Down,
 
             texture_id,
-            texture_buffer: t.2,
             textures,
 
             vertex_buffer,
@@ -253,12 +250,26 @@ impl Mesh {
     }
 
     /// Advances internal mesh state changes. Such as animation, etc.
-    fn advance(&mut self, position: Point2<f32>) {
-        self.frame += ANIM_SPEED;
-        if self.frame >= self.frame_max {
+    fn advance(&mut self, position: Point2<f32>, velocity: Vector2<f32>, attack: bool) {
+        // 1. update internal state
+        self.position = position;
+        self.direction = Direction::from_velocity(velocity);
+
+        // 2. proceed/progress tiles animation
+        self.frame += self.get_anim_speed();
+        if self.frame >= self.get_max_frame() {
             self.frame = 0.0;
         }
-        self.position = position;
+
+        // 3. pick correct texture
+        let mut texture_id = if attack { TextureID::Orc3Attack } else { TextureID::Orc3Idle };
+        if velocity.magnitude2() > WALK_THRESHOLD {
+            texture_id = if attack { TextureID::Orc3WalkAttack } else { TextureID::Orc3Walk };
+        }
+        if self.texture_id != texture_id {
+            self.texture_id = texture_id;
+            self.frame = 0.0;
+        }
     }
 
     /// Render mesh with its current given state based on provided video instance and render pass.
@@ -266,9 +277,9 @@ impl Mesh {
         rp.set_bind_group(0, &self.textures[self.texture_id.index()].bind_group, &[]);
         rp.set_bind_group(2, &self.bind_group, &[]);
 
-        let t = self.texture_buffer as usize;
-        rp.set_vertex_buffer(0, self.vertex_buffer[t].slice(..));
-        rp.set_index_buffer(self.index_buffer[t].slice(..), wgpu::IndexFormat::Uint16);
+        let b = self.get_buffer();
+        rp.set_vertex_buffer(0, self.vertex_buffer[b].slice(..));
+        rp.set_index_buffer(self.index_buffer[b].slice(..), wgpu::IndexFormat::Uint16);
 
         let m = video::MatrixUniform {
             mat: cgmath::Matrix4::from_translation((self.position.x, 0.0, self.position.y).into())
@@ -276,8 +287,33 @@ impl Mesh {
         };
         vid.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&m.mat));
 
-        let base_index = (self.frame as u32 * 4) * 6;
-        rp.draw_indexed(base_index..base_index + 6, 0, 0..1);
+        let idx = (self.frame as u32 * VERTS_PER_TILE + self.get_texture_row()) * INDS_PER_TILE;
+        rp.draw_indexed(idx..idx + 6, 0, 0..1);
+    }
+
+    /// Little helper function.
+    fn get_anim_speed(&self) -> f32 {
+        TEX_ID_LOOKUP[self.texture_id.index()].1 as f32 / 4.0 * ANIM_SPEED
+    }
+
+    /// Little helper function.
+    fn get_max_frame(&self) -> f32 {
+        TEX_ID_LOOKUP[self.texture_id.index()].1 as f32
+    }
+
+    /// Little helper function.
+    fn get_buffer(&self) -> usize {
+        TEX_ID_LOOKUP[self.texture_id.index()].2 as usize
+    }
+
+    /// Little helper function.
+    fn get_texture_row(&self) -> u32 {
+        match self.direction {
+            Direction::Up => 1,
+            Direction::Down => 0,
+            Direction::Left => 2,
+            Direction::Right => 3,
+        }
     }
 }
 
@@ -367,3 +403,4 @@ const VERT_XZ_COORD: f32 = 1.0;
 const VERT_Y_COORD: f32 = -0.25;
 
 const ANIM_SPEED: f32 = 0.15;
+const WALK_THRESHOLD: f32 = 0.000_005;

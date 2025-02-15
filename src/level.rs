@@ -1,5 +1,5 @@
 use crate::video::{TextureGroup, Vertex, Video};
-use crate::{aabb::Aabb, consts::TILE_SIZE};
+use crate::{consts::TILE_SIZE, geometry::Aabb};
 use cgmath::Point2;
 use std::collections::HashSet;
 use thiserror::Error;

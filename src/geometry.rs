@@ -1,5 +1,9 @@
 use cgmath::{AbsDiffEq, InnerSpace, Point2, RelativeEq, Vector2};
 
+// --------------------------------------------------
+// --- AABB ---
+// --------------------------------------------------
+
 pub struct Aabb {
     pub min: Point2<f32>,
     pub max: Point2<f32>,
@@ -153,13 +157,50 @@ impl RelativeEq for AabbContact {
     }
 }
 
+// --------------------------------------------------
+// --- Direction ---
+// --------------------------------------------------
+
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Direction {
+    pub fn from_velocity(v: Vector2<f32>) -> Self {
+        if v.x < -VEL_THRESHOLD && v.x.abs() > v.y.abs() {
+            return Direction::Left;
+        }
+        if v.x > VEL_THRESHOLD && v.x.abs() > v.y.abs() {
+            return Direction::Right;
+        }
+        if v.y < -VEL_THRESHOLD {
+            Direction::Up
+        } else {
+            Direction::Down
+        }
+    }
+}
+
+const VEL_THRESHOLD: f32 = 0.0001;
+
+// --------------------------------------------------
+// --- Tests ---
+// --------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::{Aabb, AabbContact};
     use cgmath::{assert_relative_eq, Point2, Vector2};
 
+    // --------------------------------------------------
+    // --- AABB ---
+    // --------------------------------------------------
+
     #[test]
-    fn test_no_intersection_case1() {
+    fn test_aabb_no_intersection_case1() {
         let a = Aabb::new(Point2::new(10.0, 10.0), Point2::new(20.0, 20.0));
         let b = Aabb::new(Point2::new(20.0, 20.0), Point2::new(30.0, 30.0));
         assert_eq!(a.check_contact(&b), AabbContact::empty());
@@ -167,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    fn test_no_intersection_case2() {
+    fn test_aabb_no_intersection_case2() {
         let a = Aabb::new(Point2::new(10.0, 10.0), Point2::new(20.0, 20.0));
         let b = Aabb::new(Point2::new(11.0, 20.0), Point2::new(19.0, 30.0));
         assert_eq!(a.check_contact(&b), AabbContact::empty());
@@ -175,7 +216,7 @@ mod tests {
     }
 
     #[test]
-    fn test_no_intersection_case3() {
+    fn test_aabb_no_intersection_case3() {
         let a = Aabb::new(Point2::new(10.0, 10.0), Point2::new(20.0, 20.0));
         let b = Aabb::new(Point2::new(20.0, 11.0), Point2::new(30.0, 19.0));
         assert_eq!(a.check_contact(&b), AabbContact::empty());
@@ -183,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn test_intersection_case1() {
+    fn test_aabb_intersection_case1() {
         let a = Aabb::new(Point2::new(10.0, 10.0), Point2::new(20.0, 20.0));
         let b = Aabb::new(Point2::new(15.0, 15.0), Point2::new(30.0, 30.0));
         assert_relative_eq!(a.check_contact(&b), AabbContact::new(5.005, Vector2::new(-1.0, 0.0)));
@@ -191,7 +232,7 @@ mod tests {
     }
 
     #[test]
-    fn test_intersection_case2() {
+    fn test_aabb_intersection_case2() {
         let a = Aabb::new(Point2::new(10.0, 10.0), Point2::new(20.0, 20.0));
         let b = Aabb::new(Point2::new(11.0, 18.5), Point2::new(19.0, 30.0));
         assert_relative_eq!(a.check_contact(&b), AabbContact::new(1.5015, Vector2::new(0.0, -1.0)));
@@ -199,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn test_intersection_case3() {
+    fn test_aabb_intersection_case3() {
         let a = Aabb::new(Point2::new(10.0, 10.0), Point2::new(20.0, 20.0));
         let b = Aabb::new(Point2::new(17.5, 11.0), Point2::new(30.0, 19.0));
         assert_relative_eq!(a.check_contact(&b), AabbContact::new(2.5025, Vector2::new(-1.0, 0.0)));
