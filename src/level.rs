@@ -636,7 +636,7 @@ impl Mesh {
         rp.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
         let uni = crate::video::MatrixUniform {
-            matrix: Matrix4::from_translation((-10.0f32, 0.0f32, -7.5f32).into()).into(),
+            matrix: Matrix4::from_translation((0.0, 0.0, 0.0).into()).into(),
         };
         vid.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&uni.matrix));
 

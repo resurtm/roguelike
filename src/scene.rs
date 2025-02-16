@@ -16,6 +16,9 @@ impl Scene {
 
     pub fn advance(&mut self, video: &crate::video::Video, input: &crate::input::Input) {
         self.observer.update(video);
+        self.observer.follow_player(&self.player);
+        self.observer.apply_input(input);
+
         self.player.advance();
         self.player.apply_input(input);
     }

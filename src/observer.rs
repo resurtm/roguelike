@@ -1,5 +1,7 @@
-use cgmath::{Matrix4, Point3, SquareMatrix, Vector3};
+use cgmath::{InnerSpace, Matrix4, MetricSpace, Point3, SquareMatrix, Vector3};
 use wgpu::util::DeviceExt;
+
+use crate::player::SPAWN_POSITION;
 
 pub struct Observer {
     eye: Point3<f32>,
@@ -35,8 +37,8 @@ impl Observer {
         });
 
         Self {
-            eye: Point3::new(-5.0, 1.0, -5.0),
-            target: Point3::new(-5.0, 0.0, -5.0),
+            eye: Point3::new(SPAWN_POSITION.0, 1.0, SPAWN_POSITION.1),
+            target: Point3::new(SPAWN_POSITION.0, 0.0, SPAWN_POSITION.1),
             up: -Vector3::unit_z(),
 
             left: 0.0,
@@ -71,6 +73,37 @@ impl Observer {
         self.uniform.view_proj = view_proj.into();
         video.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[self.uniform]));
     }
+
+    pub fn follow_player(&mut self, player: &crate::player::Player) {
+        let mut position = (self.eye.x, self.eye.z).into();
+        if player.position.distance(position) > CAM_FOLLOW_THRESHOLD {
+            let dir = (player.position - position).normalize();
+            position += dir * CAM_FOLLOW_SPEED;
+            self.eye.x = position.x;
+            self.eye.z = position.y;
+            self.target.x = position.x;
+            self.target.z = position.y;
+        }
+    }
+
+    pub fn apply_input(&mut self, input: &crate::input::Input) {
+        if input.key_w {
+            self.eye.z -= CAM_MANUAL_SPEED;
+            self.target.z -= CAM_MANUAL_SPEED;
+        }
+        if input.key_s {
+            self.eye.z += CAM_MANUAL_SPEED;
+            self.target.z += CAM_MANUAL_SPEED;
+        }
+        if input.key_a {
+            self.eye.x -= CAM_MANUAL_SPEED;
+            self.target.x -= CAM_MANUAL_SPEED;
+        }
+        if input.key_d {
+            self.eye.x += CAM_MANUAL_SPEED;
+            self.target.x += CAM_MANUAL_SPEED;
+        }
+    }
 }
 
 #[repr(C)]
@@ -79,6 +112,9 @@ struct ObserverUniform {
     view_proj: [[f32; 4]; 4],
 }
 
+const CAM_MANUAL_SPEED: f32 = 0.065;
+const CAM_FOLLOW_SPEED: f32 = 0.035;
+const CAM_FOLLOW_THRESHOLD: f32 = 2.75;
 const PIXELS_PER_TILE: u32 = 32 * 5;
 
 #[rustfmt::skip]

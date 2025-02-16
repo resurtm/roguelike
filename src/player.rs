@@ -9,7 +9,7 @@ use wgpu::util::DeviceExt;
 
 /// Represents the player character.
 pub struct Player {
-    position: Point2<f32>,
+    pub position: Point2<f32>,
 
     velocity: Vector2<f32>,
     velocity_delta: f32,
@@ -27,7 +27,7 @@ impl Player {
         let mesh = Mesh::new(video)?;
 
         Ok(Self {
-            position: Point2::new(-5.0, -5.0),
+            position: SPAWN_POSITION.into(),
 
             velocity: Vector2::new(0.0, 0.0),
             velocity_delta: 0.01,
@@ -100,6 +100,8 @@ pub enum PlayerError {
     #[error("mesh error: {0}")]
     Mesh(#[from] MeshError),
 }
+
+pub const SPAWN_POSITION: (f32, f32) = (1.75, 1.75);
 
 // --------------------------------------------------
 // --- MESH ---
