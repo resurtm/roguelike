@@ -26,9 +26,9 @@ It might be you will need Vulkan SDK, but this is not certain.
 - Arch Linux
 - EndeavourOS
 - Ubuntu LTS
-- MacOS 14.7.1
+- MacOS (14.7.1, 15.3)
 
-It doesn't work in WSL and WSLg at the moment. However, it might work with native MS Windows 11+.
+It doesn't work in WSL and with WSLg at the moment. However, it might work with native MS Windows 11+.
 
 ## Roadmap & Future Plans
 
