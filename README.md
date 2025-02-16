@@ -15,34 +15,40 @@ Tiny hobby / free-time roguelike game pet-project. 🔮🧝🏻🪄
             /____/
 ```
 
-## Arch Linux (+ EndeavourOS) Dependencies
+## Screenshot
 
-- https://archlinux.org/packages/extra/x86_64/sdl2/
-- https://archlinux.org/packages/extra/x86_64/sdl2_image/
+![roguelike](./assets/readme/screenshot.png)
 
-```
-yay -S sdl2 sdl2_image
-```
+## Tested Platforms
 
-## Ubuntu Dependencies
+It might be you will need Vulkan SDK, but this is not certain.
 
-```
-sudo apt install libsdl2-dev libsdl2-image-dev
-```
+- Arch Linux
+- EndeavourOS
+- Ubuntu LTS
+- MacOS 14.7.1
 
-## MacOS Dependencies
+It doesn't work in WSL and WSLg at the moment. However it might work with native MS Windows 11+.
 
-Tested on MBP 14" (Nov 2023), M3 Pro, 36 GB RAM, Sonoma 14.7.1.
+## Roadmap & Future Plans
 
-```
-brew install sdl2
-brew install sdl2_image
-
-brew link sdl2
-brew link sdl2_image
-
-export LIBRARY_PATH="$LIBRARY_PATH:/opt/homebrew/lib"
-```
+- [x] Move/migrate from `SDL2` to `wgpu`/`winit`.
+- [x] Cleanup a bit `wgpu`/`winit` implementation.
+- [x] Github Actions (basic CI/CD).
+- [ ] Better configuration management.
+- [ ] Implement basic level editor (maybe Leptos web-based; doesn't have to be "native").
+- [ ] Allow to select the different `wgpu` backends (not just Vulkan, but also OpenGL, etc.).
+- [ ] Bump all dependency versions and migrate to new versions (especially `wgpu`/`winit`).
+- [ ] Add two more orc types (Orc1 and Orc2; at the moment only Orc3 is supported).
+- [ ] Add support and resolve issues with WSL/WSLg.
+- [ ] Add support and resolve issues with native MS Windows 11+.
+- [ ] Cover with tests what's possible.
+- [ ] Music and sound effects.
+- [ ] Main menu and options.
+- [ ] Add collectibles.
+- [ ] Inventory system.
+- [ ] Add HP and MP (mana).
+- [ ] Try to add some enemies.
 
 ## Assets
 
