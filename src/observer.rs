@@ -12,70 +12,15 @@ pub struct Observer {
     top: f32,
     near: f32,
     far: f32,
-}
 
-impl Observer {
-    pub fn new(win_size: (u32, u32)) -> Self {
-        Self {
-            eye: Point3::new(-5.0, 1.0, -5.0),
-            target: Point3::new(-5.0, 0.0, -5.0),
-            up: -Vector3::unit_z(),
-
-            left: -((win_size.0 / 2 / PIXELS_PER_TILE) as f32),
-            right: (win_size.0 / 2 / PIXELS_PER_TILE) as f32,
-            bottom: -((win_size.1 / 2 / PIXELS_PER_TILE) as f32),
-            top: (win_size.1 / 2 / PIXELS_PER_TILE) as f32,
-            near: -10.0,
-            far: 10.0,
-        }
-    }
-
-    fn build_matrix(&self) -> Matrix4<f32> {
-        let proj = cgmath::ortho(self.left, self.right, self.bottom, self.top, self.near, self.far);
-        let view = Matrix4::look_at_rh(self.eye, self.target, self.up);
-        OPENGL_TO_WGPU_MATRIX * proj * view
-    }
-}
-
-const PIXELS_PER_TILE: u32 = 32 * 5;
-
-#[rustfmt::skip]
-const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.5,
-    0.0, 0.0, 0.0, 1.0,
-);
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct ObserverUniform {
-    view_proj: [[f32; 4]; 4],
-}
-
-impl ObserverUniform {
-    fn new() -> Self {
-        Self { view_proj: Matrix4::identity().into() }
-    }
-
-    fn apply_observer(&mut self, observer: &Observer) {
-        self.view_proj = observer.build_matrix().into();
-    }
-}
-
-pub struct ObserverGroup {
-    observer: Observer,
     uniform: ObserverUniform,
     buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
 }
 
-impl ObserverGroup {
+impl Observer {
     pub fn new(video: &crate::video::Video) -> Self {
-        let observer = Observer::new((1600, 1200));
-
-        let mut uniform = ObserverUniform::new();
-        uniform.apply_observer(&observer);
+        let uniform = ObserverUniform { view_proj: Matrix4::identity().into() };
 
         let buffer = video.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("observer_buffer"),
@@ -89,12 +34,57 @@ impl ObserverGroup {
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
         });
 
-        Self { observer, uniform, buffer, bind_group }
+        Self {
+            eye: Point3::new(-5.0, 1.0, -5.0),
+            target: Point3::new(-5.0, 0.0, -5.0),
+            up: -Vector3::unit_z(),
+
+            left: 0.0,
+            right: 0.0,
+            bottom: 0.0,
+            top: 0.0,
+            near: -10.0,
+            far: 10.0,
+
+            uniform,
+            buffer,
+            bind_group,
+        }
     }
 
-    pub fn handle_resize(&mut self, video: &crate::video::Video, win_size: (u32, u32)) {
-        self.observer = Observer::new(win_size);
-        self.uniform.apply_observer(&self.observer);
+    pub fn handle_resize(&mut self, win_size: (u32, u32)) {
+        let x = (win_size.0 / 2 / PIXELS_PER_TILE) as f32;
+        let y = (win_size.1 / 2 / PIXELS_PER_TILE) as f32;
+
+        self.left = -x;
+        self.right = x;
+        self.bottom = -y;
+        self.top = y;
+        self.near = -10.0;
+        self.far = 10.0;
+    }
+
+    pub fn update(&mut self, video: &crate::video::Video) {
+        let view = Matrix4::look_at_rh(self.eye, self.target, self.up);
+        let proj = cgmath::ortho(self.left, self.right, self.bottom, self.top, self.near, self.far);
+        let view_proj = OPENGL_TO_WGPU_MATRIX * proj * view;
+        self.uniform.view_proj = view_proj.into();
         video.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[self.uniform]));
     }
 }
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct ObserverUniform {
+    view_proj: [[f32; 4]; 4],
+}
+
+const PIXELS_PER_TILE: u32 = 32 * 5;
+
+#[rustfmt::skip]
+const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 0.5, 0.5,
+    0.0, 0.0, 0.0, 1.0,
+);

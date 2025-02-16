@@ -29,7 +29,7 @@ pub async fn launch() -> Result<(), LaunchError> {
 
     let mut input = crate::input::Input::new();
     let mut scene = crate::scene::Scene::new(&video)?;
-    scene.observer.handle_resize(&video, window.inner_size().into());
+    scene.observer.handle_resize(window.inner_size().into());
 
     event_loop.run(move |event, control_flow| match event {
         event::Event::WindowEvent { ref event, window_id } if window_id == window.id() => {
@@ -49,23 +49,25 @@ pub async fn launch() -> Result<(), LaunchError> {
 
                 WindowEvent::Resized(physical_size) => {
                     video.handle_resize(*physical_size);
-                    scene.observer.handle_resize(&video, (*physical_size).into());
+                    scene.observer.handle_resize((*physical_size).into());
                     surface_ready = true;
                 }
 
                 WindowEvent::RedrawRequested => {
                     // artificially slow down / cap frame rate
                     std::thread::sleep(std::time::Duration::new(0, FRAME_DELAY_NSECS));
-                    scene.advance(&input);
+                    scene.advance(&video, &input);
+
                     window.request_redraw();
                     if !surface_ready {
                         return;
                     }
+
                     match video.render(&scene) {
                         Ok(_) => {}
                         Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
                             video.handle_resize(window.inner_size());
-                            scene.observer.handle_resize(&video, window.inner_size().into());
+                            scene.observer.handle_resize(window.inner_size().into());
                         }
                         Err(wgpu::SurfaceError::OutOfMemory) => {
                             log::error!("OutOfMemory");
