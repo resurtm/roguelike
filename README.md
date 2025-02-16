@@ -28,7 +28,7 @@ It might be you will need Vulkan SDK, but this is not certain.
 - Ubuntu LTS
 - MacOS 14.7.1
 
-It doesn't work in WSL and WSLg at the moment. However it might work with native MS Windows 11+.
+It doesn't work in WSL and WSLg at the moment. However, it might work with native MS Windows 11+.
 
 ## Roadmap & Future Plans
 
@@ -36,6 +36,7 @@ It doesn't work in WSL and WSLg at the moment. However it might work with native
 - [x] Cleanup a bit `wgpu`/`winit` implementation.
 - [x] Github Actions (basic CI/CD).
 - [ ] Better configuration management.
+- [ ] Update to the Rust 2024 edition.
 - [ ] Implement basic level editor (maybe Leptos web-based; doesn't have to be "native").
 - [ ] Allow to select the different `wgpu` backends (not just Vulkan, but also OpenGL, etc.).
 - [ ] Bump all dependency versions and migrate to new versions (especially `wgpu`/`winit`).
