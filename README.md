@@ -50,6 +50,9 @@ It doesn't work in WSL and with WSLg at the moment. However, it might work with 
 - [ ] Inventory system.
 - [ ] Add HP and MP (mana).
 - [ ] Try to add some enemies.
+- [ ] Add WASM support and make game playable in Firefox + Chrome.
+- [ ] Implement basic console for commands.
+- [ ] Implement optional collision boxes rendering.
 
 ## Assets
 
