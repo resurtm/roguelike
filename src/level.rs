@@ -23,8 +23,9 @@ pub enum Block {
 // --------------------------------------------------
 
 pub struct Level {
+    #[allow(dead_code)]
     blocks: Blocks,
-    collision: Collision,
+    pub collision: Collision,
     pub mesh: Mesh,
 }
 
@@ -47,7 +48,8 @@ impl Level {
                 blocks[x][y] = match ch {
                     b'.' => Block::Free,
                     b'#' => Block::Wall,
-                    b' ' | _ => Block::Void,
+                    b' ' => Block::Void,
+                    _ => Block::Void,
                 };
             }
         }
@@ -69,7 +71,7 @@ pub enum LevelError {
 // --------------------------------------------------
 
 pub struct Collision {
-    aabbs: Vec<Aabb>,
+    pub aabbs: Vec<Aabb>,
 }
 
 impl Collision {
@@ -88,8 +90,14 @@ impl Collision {
             .iter()
             .map(|(x0, y0, x1, y1)| {
                 Aabb::new(
-                    Point2::new(*x0 as f32 * TILE_SIZE as f32, *y0 as f32 * TILE_SIZE as f32),
-                    Point2::new(*x1 as f32 * TILE_SIZE as f32, *y1 as f32 * TILE_SIZE as f32),
+                    Point2::new(
+                        *x0 as f32 * MESH_XZ_COORD * 2.0 - MESH_XZ_COORD,
+                        *y0 as f32 * MESH_XZ_COORD * 2.0 - MESH_XZ_COORD,
+                    ),
+                    Point2::new(
+                        *x1 as f32 * MESH_XZ_COORD * 2.0 - MESH_XZ_COORD,
+                        *y1 as f32 * MESH_XZ_COORD * 2.0 - MESH_XZ_COORD,
+                    ),
                 )
             })
             .collect()
@@ -162,8 +170,6 @@ impl Collision {
         true
     }
 }
-
-const TILE_SIZE: u32 = 96;
 
 // --------------------------------------------------
 // --- DUNGEON TILE ---
@@ -650,7 +656,7 @@ pub enum MeshError {
     Texture(#[from] crate::video::TextureError),
 }
 
-const MESH_XZ_COORD: f32 = 0.5;
+pub const MESH_XZ_COORD: f32 = 0.5;
 const MESH_Y_COORD: f32 = -0.5;
 const MESH_TEXTURE_SIZE: u32 = 160;
 const MESH_TEXTURE_TILE_SIZE: u32 = 16;

@@ -21,6 +21,7 @@ impl Scene {
 
         self.player.advance();
         self.player.apply_input(input);
+        self.player.sync_level_collision(&self.level.collision);
     }
 }
 

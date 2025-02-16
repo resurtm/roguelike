@@ -78,21 +78,21 @@ impl Player {
         self.attack = input.key_space;
     }
 
-    // TODO: Uncomment and rework this later.
-    // pub(crate) fn sync_level_collision(&mut self, col: &crate::level::Collision) {
-    //     let p = Aabb::new(
-    //         Point2::new(self.position.x - 96.0 / 4.0, self.position.y - 96.0 / 4.0),
-    //         Point2::new(self.position.x + 96.0 / 4.0, self.position.y + 96.0 / 4.0),
-    //     );
-    //
-    //     col.aabbs.iter().for_each(|aabb| {
-    //         let cont = aabb.check_contact(&p);
-    //         if cont.intersects {
-    //             let offset = cont.min_trans * cont.penetration;
-    //             self.position -= Vector2::new(offset.x, offset.y);
-    //         }
-    //     });
-    // }
+    pub fn sync_level_collision(&mut self, collision: &crate::level::Collision) {
+        let ts = crate::level::MESH_XZ_COORD * 0.75;
+        let player = crate::geometry::Aabb::new(
+            Point2::new(self.position.x - ts, self.position.y - ts),
+            Point2::new(self.position.x + ts, self.position.y + ts),
+        );
+
+        collision.aabbs.iter().for_each(|aabb| {
+            let contact = aabb.check_contact(&player);
+            if contact.intersects {
+                let offset = contact.min_trans * contact.penetration;
+                self.position -= Vector2::new(offset.x, offset.y);
+            }
+        });
+    }
 }
 
 #[derive(Error, Debug)]
