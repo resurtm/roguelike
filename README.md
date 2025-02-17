@@ -19,6 +19,12 @@ Tiny hobby / free-time roguelike game pet-project. 🔮🧝🏻🪄
 
 ![roguelike](./assets/readme/screenshot.png)
 
+## Controls
+
+- Arrow keys - move.
+- Space bar - attack.
+- W/S/A/D keys - move camera.
+
 ## Tested Platforms
 
 It might be you will need Vulkan SDK, but this is not certain.
